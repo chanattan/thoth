@@ -4,7 +4,7 @@ public class News {
     private String description;
 
     /// Initializes a news item.
-    public News(String title, String description, int effect) {
+    public News(String title, String description, float effect) {
         this.title = title;
         this.description = description;
         this.effect = effect;
@@ -23,5 +23,20 @@ public class News {
     /// Returns the measurable effect on stocks.
     public float getEffect() {
         return this.effect;
+    }
+
+    /*
+        Static table of news.
+    */
+    static News defined_news[] = {
+         new News("BNP Paribas manque de sérieux", "BNP Paribas a perdu des documents administratifs, +20% de risques.", -20.0f)
+    };
+
+    /*
+        Generates a pool of n different news.
+    */
+    public static void generateNews(int n) {
+        ArrayList<News> news = new ArrayList<News>();
+        //news.add(new News());
     }
 }
