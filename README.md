@@ -19,5 +19,5 @@ can be used to control:
 
 ## About
 
-This project was developed by Aloïs Rautureau and Chanattan Sok as a Human-AI interaction project for the corresponding class at Sorbonne University.
+This project was developed by Aloïs Rautureau, Chanattan Sok, and Tom Bouscarat as a Human-AI interaction project for the corresponding class at Sorbonne University.
 
