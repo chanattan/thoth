@@ -20,9 +20,9 @@ public class Window extends JFrame {
             System.out.println("Investing...");
                 });
 		
-		JPanel panel = new JPanel();
-		panel.setBackground(new Color(0, 143, 224));
-		getContentPane().add(panel);
+		JPanel investorPanel = new InvestorPanel();
+		investorPanel.setBackground(new Color(0, 143, 224));
+		getContentPane().add(investorPanel);
 		getContentPane().add(btnNewButton);
         setVisible(true);
 	}
