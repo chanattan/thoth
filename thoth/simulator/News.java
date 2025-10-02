@@ -1,5 +1,9 @@
 package thoth.simulator;
 
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.stream.Collectors;
+
 public class News {
     private float effect;
     private String title;
@@ -183,8 +187,25 @@ public class News {
     /*
         Generates a pool of n different news.
     */
-    public static void generateNews(int n) {
+    public static ArrayList<News> generateNews(int n) {
         ArrayList<News> news = new ArrayList<News>();
-        //news.add(new News());
+        
+        // Select a random set of news.
+        ArrayList<Integer> indices = new ArrayList<Integer>();
+        for(int i = 1; i <= defined_news.length; i++) {
+            indices.add(i);
+        }
+
+        Random rand = new Random();
+        for (int i = 0; i < n; i++) {
+            int index = rand.nextInt(indices.size());
+            int elem = indices.remove(index);
+            news.add(defined_news[elem]); // No need to copy as the object is not changed.
+        }
+        return news;
+    }
+
+    public static void test(String[] args) {
+        System.out.println(generateNews(10).stream().map(News::getTitle).collect(Collectors.toList()));
     }
 }
