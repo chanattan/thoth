@@ -10,7 +10,9 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 public class Window extends JFrame {
-	public Window() {
+	private Simulator sim;
+
+	public Window(Thoth thoth) {
 		setSize(new Dimension(1280, 720));
 		getContentPane().setBackground(new Color(54, 54, 54));
 		setBackground(new Color(54, 54, 54));
@@ -22,11 +24,15 @@ public class Window extends JFrame {
             System.out.println("Investing...");
                 });
 		
-		JPanel investorPanel = new Simulator();
-		investorPanel.setBackground(new Color(0, 143, 224));
-		getContentPane().add(investorPanel);
+		Simulator simulator = new Simulator(thoth);
+		this.sim = simulator;
+		getContentPane().add(simulator);
 		getContentPane().add(btnNewButton);
         setVisible(true);
+	}
+
+	public Simulator getSimulator() {
+		return this.sim;
 	}
 
 	private static final long serialVersionUID = 1L;

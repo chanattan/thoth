@@ -34,7 +34,7 @@ public class News {
     /*
         Static table of news.
     */
-    static News defined_news[] = {
+    static final News defined_news[] = {
         new News("BNP Paribas manque de sérieux", "BNP Paribas a perdu des documents administratifs, +20% de risques.", -20.0f),
         new News("Apple annonce un nouvel iPhone", "Apple dévoile un modèle avec plus de performance et d’autonomie.", +15.0f),
         new News("Tesla en difficulté", "Tesla rappelle 200 000 véhicules pour un problème de batterie.", -25.0f),
@@ -192,7 +192,7 @@ public class News {
         
         // Select a random set of news.
         ArrayList<Integer> indices = new ArrayList<Integer>();
-        for(int i = 1; i <= defined_news.length; i++) {
+        for(int i = 0; i < defined_news.length; i++) {
             indices.add(i);
         }
 
