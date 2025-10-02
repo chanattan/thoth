@@ -1,3 +1,5 @@
+package thoth.logic;
+
 import java.util.Random;
 public class Curve {
     private float[] values;

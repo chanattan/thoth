@@ -1,3 +1,5 @@
+package thoth.logic;
+
 public class Fund {
     private final String fundName;
     private final Curve curve;

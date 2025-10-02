@@ -1,3 +1,5 @@
+package thoth.simulator;
+
 public class News {
     private float effect;
     private String title;

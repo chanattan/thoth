@@ -1,3 +1,5 @@
+package thoth.simulator;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -20,7 +22,7 @@ public class Window extends JFrame {
             System.out.println("Investing...");
                 });
 		
-		JPanel investorPanel = new InvestorPanel();
+		JPanel investorPanel = new Simulator();
 		investorPanel.setBackground(new Color(0, 143, 224));
 		getContentPane().add(investorPanel);
 		getContentPane().add(btnNewButton);

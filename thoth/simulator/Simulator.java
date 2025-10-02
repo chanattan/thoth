@@ -1,9 +1,12 @@
+package thoth.simulator;
+
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
 import javax.swing.JPanel;
+import thoth.logic.Curve;
 
 @SuppressWarnings("serial")
 public class Simulator extends JPanel {
@@ -27,17 +30,17 @@ public class Simulator extends JPanel {
 		g.drawString("TEST", 500, 500);
 
 		// For each fund, display its associated curve.
-		for (Entry<String, Curve> e : data.entrySet()) {
+		/*for (Entry<String, Curve> e : data.entrySet()) {
 			String fundName = e.getKey();
 			Curve curve = e.getValue();
 
 			// Display the curve for all the months.
-			for (int i = 1; i < curve.getTimeWindow(); i++) {
-				float currValue = curve.getFund(i);
+			for (int i = 1; i < curve.getSteps(); i++) {
+				float currValue = curve.getValue(i);
 				// Plot the corresponding point.
 				
 			}
-		}  
+		}  */
 	}
 	
 	public static HashMap<String, Curve> generateFunds() {
