@@ -1,5 +1,5 @@
 public class News {
-    private int effect;
+    private float effect;
     private String title;
     private String description;
 
@@ -21,7 +21,7 @@ public class News {
     }
 
     /// Returns the measurable effect on stocks.
-    public int getEffect() {
+    public float getEffect() {
         return this.effect;
     }
 }
