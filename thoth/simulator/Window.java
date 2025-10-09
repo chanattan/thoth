@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 
 public class Window extends JFrame {
 	private Simulator sim;
@@ -24,11 +25,13 @@ public class Window extends JFrame {
 		btnNewButton.addActionListener((ActionEvent e) -> {
             System.out.println("Investing...");
                 });
+		JLabel capitalLabel = new JLabel("Capital: " + thoth.player.getCapital());
 		
 		Simulator simulator = new Simulator(thoth);
 		this.sim = simulator;
 		getContentPane().add(simulator);
 		getContentPane().add(btnNewButton);
+		getContentPane().add(capitalLabel);
         setVisible(true);
 	}
 

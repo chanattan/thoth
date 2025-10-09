@@ -3,16 +3,19 @@ package thoth.simulator;
 import java.util.ArrayList;
 import javax.swing.*;
 import thoth.logic.Fund;
+import thoth.logic.Player;
 
 public class Thoth {
 
     public ArrayList<News> news;
     public ArrayList<Fund> funds;
+    public Player player;
 
     public Thoth() {
         // Initializes simulation.
         this.news = News.generateNews(10);
         this.funds = Fund.generateFunds(5);
+        this.player = new Player();
     }
 
     // Returns the effect for a given news.

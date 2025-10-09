@@ -9,28 +9,36 @@ import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.Point;
-import java.awt.Shape;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 
 import java.awt.geom.Line2D;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
+import thoth.logic.Action;
 
 @SuppressWarnings("serial")
 public class Simulator extends JPanel {
 
 	private ArrayList<Fund> data;
 	private Thoth thoth;
+    private final java.util.List<Object[]> points = new ArrayList<Object[]>(); // Invest actions
+    private Point2D.Double click = null;
+	private AffineTransform currTransform = null;
+	private Point2D worldPt;
 
 	// Mouse dragging
     private double offsetX = 0;
     private double offsetY = 0;
+    private double scale = 1.0;
     private Point lastDragPoint = null;
 	
 	public Simulator(Thoth thoth) {
@@ -44,10 +52,57 @@ public class Simulator extends JPanel {
 			}
         }).start();
 
+		int offset = 60;
+		int yoffset = 100;
+		float effect = 0; //this.thoth.getEffect(name);
+		for (Fund f : this.thoth.funds) {
+			Curve curve = f.getCurve();
+			for (int i = 0; i < curve.getSteps(); i++) {
+				int x1 = (i+1) * offset;
+				int y1 = curve.getValue(i, effect) + yoffset;
+				Point2D.Double point = new Point2D.Double(x1, y1);
+				points.add(new Object[] {point, new Action(i, -curve.getValue(i, effect), f)});
+			}
+		}
+
 		MouseAdapter ma = new MouseAdapter() {
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (currTransform == null) {
+					return;
+				}
+
+				try {
+					AffineTransform completeTransform = new AffineTransform();
+					completeTransform.translate(offsetX, offsetY);
+					completeTransform.scale(scale, scale);
+					completeTransform.translate(100, 500);
+					
+					AffineTransform screenToWorld = completeTransform.createInverse();
+					worldPt = screenToWorld.transform(e.getPoint(), null);
+
+					double threshold = 20 / scale; 
+					click = null;
+					for (Object[] o : points) {
+						Point2D.Double p = (Point2D.Double) o[0];
+						Action a = (Action) o[1];
+						double dist = worldPt.distance(p);
+						if (dist < threshold) {
+							click = p;
+							System.out.println("Investing " + a.getValue() + " in Fund " + a.getFund().getName());
+							break;
+						}
+					}
+				} catch (NoninvertibleTransformException ex) {
+					ex.printStackTrace();
+				}
+				repaint();
+            }
+
             @Override
             public void mousePressed(MouseEvent e) {
-                lastDragPoint = e.getPoint();
+				lastDragPoint = e.getPoint();
             }
 
             @Override
@@ -65,6 +120,17 @@ public class Simulator extends JPanel {
             @Override
             public void mouseReleased(MouseEvent e) {
                 lastDragPoint = null;
+            }
+
+			@Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                double zoomFactor = 1.1;
+                int notches = e.getWheelRotation();
+                if (notches < 0)
+                    scale *= zoomFactor;
+                else
+                    scale /= zoomFactor;
+                repaint();
             }
         };
         addMouseListener(ma);
@@ -123,8 +189,9 @@ public class Simulator extends JPanel {
 		g.fillRect(0, 0, this.getWidth(), h);
 		g.setPaint(oldPaint);
 
-		// Apply translation
+		// Apply effects
         g.translate(offsetX, offsetY);
+		g.scale(scale, scale);
 
 		// ========== Grid
 		// It should be y-invert to be cleaner.
@@ -135,6 +202,7 @@ public class Simulator extends JPanel {
 		// ========== Main Frame (curves)
 		g.translate(100, 500);
 		this.drawMainFrame(g);
+		g.translate(-100, -500);
 
 		g.setTransform(lastTransform);
 
@@ -144,6 +212,11 @@ public class Simulator extends JPanel {
         this.setOptions(g);
 		g.setTransform(lastTransform);
 		g.setStroke(new BasicStroke(2));
+		
+		g.translate(offsetX, offsetY);
+		g.scale(scale, scale);
+		this.currTransform = (AffineTransform) g.getTransform().clone();
+		g.setTransform(lastTransform);
 
 		this.drawHeader(g);
 	}
@@ -246,6 +319,12 @@ public class Simulator extends JPanel {
         int colorIndex = 0;
 		int xoffset = 60;
 		int yoffset = 100;
+
+		// Draw worldPt in the correct coordinate space
+		if (click != null) {
+			g.setColor(Color.ORANGE);
+			g.drawOval((int) click.getX() - 8, (int) click.getY() - 8, 16, 16);
+		}
 
         for (int y = 0; y < this.thoth.funds.size(); y++) {
 			Fund fund = this.thoth.funds.get(y);
