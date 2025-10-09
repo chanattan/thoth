@@ -141,6 +141,7 @@ public class Simulator extends JPanel {
 		this.drawMeta(g);
 
 		// ========== Header
+        this.setOptions(g);
 		g.setTransform(lastTransform);
 		g.setStroke(new BasicStroke(2));
 
@@ -223,18 +224,20 @@ public class Simulator extends JPanel {
 		// Bar
 		g.setColor(Color.BLACK);
 		g.fillRect(0, 26, 120, this.getHeight());
+		g.setFont(new Font("Monospaced", Font.PLAIN, 13)); 
 
 		// Information relative to the n displayed funds
-		int maxDisplayedFunds = 4;
-		int yOffset = 20;
-		for (int i = 0; i < maxDisplayedFunds; i++) {
+		int maxDisplayedFunds = 8;
+		int yOffset = 30;
+		for (int i = 0; i < this.thoth.funds.size(); i++) {
+			if (i >= maxDisplayedFunds - 1)
+				break;
 			Fund f = this.thoth.funds.get(i);
 			String fundName = f.getName();
 
 			Color c = Simulator.colorFromIndex(i + 10);
 			g.setColor(c);
-			g.drawString(fundName, 20, 20 + yOffset * i);
-			yOffset += 20;
+			g.drawString(fundName, 20, 50 + yOffset * i);
 		}
 	}
 
