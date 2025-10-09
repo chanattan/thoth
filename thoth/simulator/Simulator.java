@@ -8,7 +8,10 @@ import java.awt.RenderingHints;
 import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Paint;
+import java.awt.Point;
 import java.awt.Shape;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 
@@ -25,6 +28,11 @@ public class Simulator extends JPanel {
 	private ArrayList<Fund> data;
 	private Thoth thoth;
 
+	// Mouse dragging
+    private double offsetX = 0;
+    private double offsetY = 0;
+    private Point lastDragPoint = null;
+	
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
@@ -35,6 +43,32 @@ public class Simulator extends JPanel {
             	repaint();
 			}
         }).start();
+
+		MouseAdapter ma = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lastDragPoint = e.getPoint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (lastDragPoint != null) {
+                    int dx = e.getX() - lastDragPoint.x;
+                    int dy = e.getY() - lastDragPoint.y;
+                    offsetX += dx;
+                    offsetY += dy;
+                    lastDragPoint = e.getPoint();
+                    repaint();
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                lastDragPoint = null;
+            }
+        };
+        addMouseListener(ma);
+        addMouseMotionListener(ma);
 	}
 
 	/*
@@ -78,6 +112,8 @@ public class Simulator extends JPanel {
 		Graphics2D g = (Graphics2D) g2;
         this.setOptions(g);
 
+		AffineTransform lastTransform = (AffineTransform) g.getTransform().clone();
+
         int h = getHeight();
 		Paint oldPaint = g.getPaint();
 		GradientPaint bg = new GradientPaint(0, 0, new Color(10, 15, 22),
@@ -87,13 +123,14 @@ public class Simulator extends JPanel {
 		g.fillRect(0, 0, this.getWidth(), h);
 		g.setPaint(oldPaint);
 
-		AffineTransform lastTransform = (AffineTransform) g.getTransform().clone();
+		// Apply translation
+        g.translate(offsetX, offsetY);
 
 		// ========== Grid
-		Shape oldClip = g.getClip();
-		g.setClip(140, 50, this.getWidth() - 180, this.getHeight() - 80);
+		// It should be y-invert to be cleaner.
+		g.translate(120, -30);
 		this.drawGrid(g);
-		g.setClip(oldClip);
+		g.translate(-120, 30);
 
 		// ========== Main Frame (curves)
 		g.translate(100, 500);
@@ -221,13 +258,12 @@ public class Simulator extends JPanel {
 				int y1 = curve.getValue(i, effect) + yoffset;
 				int y2 = curve.getValue(i+1, effect) + yoffset;
                 g.drawLine(x1, y1, x2, y2);
-				g.fillOval(x1 - 3, y1 - 3, 3, 6);
+				g.fillOval(x1 - 3, y1 - 3, 6, 6);
             }
 
 			int xlast = curve.getSteps() - 1;
-			int ylast = curve.getValue(xlast, effect);
-
-			g.fillOval(xlast - 4, ylast - 3, 6, 6);
+			int ylast = curve.getValue(xlast, effect) + yoffset;
+			g.fillOval((xlast + 1) * offset - 3, ylast - 3, 6, 6);
 
             colorIndex++;
         }
