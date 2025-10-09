@@ -6,8 +6,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Paint;
+import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+
+import java.awt.geom.Line2D;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -19,19 +24,17 @@ public class Simulator extends JPanel {
 
 	private ArrayList<Fund> data;
 	private Thoth thoth;
-	private Timer timer;
 
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
-		// Timer that updates every 16ms (~60 FPS)
-        this.timer = new Timer(16, e -> {
+		// Timer for global animation that updates every 16ms (~60 FPS)
+        new Timer(16, e -> {
             boolean repaint = update();
 			if (repaint) {
             	repaint();
 			}
-        });
-        timer.start();
+        }).start();
 	}
 
 	/*
@@ -63,7 +66,7 @@ public class Simulator extends JPanel {
 	private void setOptions(Graphics2D g) {
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setStroke(new BasicStroke(2));
-		g.setFont(new Font("Monospace", Font.PLAIN, 10)); 
+		g.setFont(new Font("Monospaced", Font.PLAIN, 10)); 
 	}
 
 	/*
@@ -75,16 +78,78 @@ public class Simulator extends JPanel {
 		Graphics2D g = (Graphics2D) g2;
         this.setOptions(g);
 
+        int h = getHeight();
+		Paint oldPaint = g.getPaint();
+		GradientPaint bg = new GradientPaint(0, 0, new Color(10, 15, 22),
+                                             0, h, new Color(18, 24, 32));
+											 
+		g.setPaint(bg);
+		g.fillRect(0, 0, this.getWidth(), h);
+		g.setPaint(oldPaint);
+
 		AffineTransform lastTransform = (AffineTransform) g.getTransform().clone();
+
+		// ========== Grid
+		Shape oldClip = g.getClip();
+		g.setClip(140, 50, this.getWidth() - 180, this.getHeight() - 80);
+		this.drawGrid(g);
+		g.setClip(oldClip);
 
 		// ========== Main Frame (curves)
 		g.translate(100, 500);
 		this.drawMainFrame(g);
 
-		// ========== Header
 		g.setTransform(lastTransform);
 
+		this.drawMeta(g);
+
+		// ========== Header
+		g.setTransform(lastTransform);
+		g.setStroke(new BasicStroke(2));
+
 		this.drawHeader(g);
+	}
+
+	private void drawGrid(Graphics2D g2) {
+		int w = getWidth();
+        int h = getHeight();
+		int minorStep = 20;
+		int majorStep = 80;
+		Color minorColor = new Color(255, 255, 255, 20);
+        Color majorColor = new Color(255, 255, 255, 45);
+		g2.setStroke(new BasicStroke(1f));
+        g2.setColor(minorColor);
+        // Alignement à 0.5 pour des lignes nettes 1px
+        for (int x = 0; x <= w; x += minorStep) {
+            double xx = x + 0.5;
+            g2.draw(new Line2D.Double(xx, 0, xx, h));
+        }
+        for (int y = 0; y <= h; y += minorStep) {
+            double yy = y + 0.5;
+            g2.draw(new Line2D.Double(0, yy, w, yy));
+        }
+
+        // lignes majeures
+        g2.setStroke(new BasicStroke(1f));
+        g2.setColor(majorColor);
+        for (int x = 0; x <= w; x += majorStep) {
+            double xx = x + 0.5;
+            g2.draw(new Line2D.Double(xx, 0, xx, h));
+        }
+        for (int y = 0; y <= h; y += majorStep) {
+            double yy = y + 0.5;
+            g2.draw(new Line2D.Double(0, yy, w, yy));
+        }
+
+		Color axisColor = new Color(255, 255, 255, 160);
+
+        // Dessiner axes 
+        g2.setColor(axisColor);
+        g2.setStroke(new BasicStroke(1.5f));
+        // Axe X en bas
+        g2.draw(new Line2D.Double(0.5, h - 0.5, w - 0.5, h - 0.5));
+        // Axe Y à gauche
+        g2.draw(new Line2D.Double(0.5, 0.5, 0.5, h - 0.5));
 	}
 
 	private void drawHeader(Graphics2D g) {
@@ -103,6 +168,39 @@ public class Simulator extends JPanel {
 		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
 	}
 
+	public static Color colorFromIndex(int index) {
+        index = Math.max(0, index - 1);
+
+        float hue = (index * 0.15f) % 1.0f;
+        float saturation = 0.9f;
+        float brightness = 1f;
+
+        return Color.getHSBColor(hue, saturation, brightness);
+    }
+
+	private void drawMeta(Graphics2D g) {
+		/*
+			Draw meta information on the left.
+		*/
+
+		// Bar
+		g.setColor(Color.BLACK);
+		g.fillRect(0, 26, 120, this.getHeight());
+
+		// Information relative to the n displayed funds
+		int maxDisplayedFunds = 4;
+		int yOffset = 20;
+		for (int i = 0; i < maxDisplayedFunds; i++) {
+			Fund f = this.thoth.funds.get(i);
+			String fundName = f.getName();
+
+			Color c = Simulator.colorFromIndex(i + 10);
+			g.setColor(c);
+			g.drawString(fundName, 20, 20 + yOffset * i);
+			yOffset += 20;
+		}
+	}
+
 	private void drawMainFrame(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.
         Color[] colors = {Color.BLUE, Color.RED, Color.GREEN, Color.ORANGE, Color.MAGENTA, Color.CYAN}; // Max 6 curves.
@@ -111,7 +209,6 @@ public class Simulator extends JPanel {
 		int yoffset = 100;
 
         for (Fund fund : data) {
-            String name = fund.getName();
             Curve curve = fund.getCurve();
 			float effect = 0; //this.thoth.getEffect(name);
 
@@ -131,8 +228,6 @@ public class Simulator extends JPanel {
 			int ylast = curve.getValue(xlast, effect);
 
 			g.fillOval(xlast - 4, ylast - 3, 6, 6);
-            // Label the curve near its last point
-			g.drawString(name, xlast + 5, ylast - 5);
 
             colorIndex++;
         }
