@@ -11,6 +11,10 @@ public class Action {
         this.fund = fund;
     }
 
+    public void updateValue(double newValue) {
+        this.value = newValue;
+    }
+
     public int getTime() {
         return this.time;
     }
