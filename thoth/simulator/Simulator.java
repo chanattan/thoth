@@ -243,16 +243,17 @@ public class Simulator extends JPanel {
 
 	private void drawMainFrame(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.
-        Color[] colors = {Color.BLUE, Color.RED, Color.GREEN, Color.ORANGE, Color.MAGENTA, Color.CYAN}; // Max 6 curves.
         int colorIndex = 0;
 		int xoffset = 60;
 		int yoffset = 100;
 
-        for (Fund fund : data) {
+        for (int y = 0; y < this.thoth.funds.size(); y++) {
+			Fund fund = this.thoth.funds.get(y);
             Curve curve = fund.getCurve();
 			float effect = 0; //this.thoth.getEffect(name);
 
-            g.setColor(colors[colorIndex % colors.length]);
+			Color c = Simulator.colorFromIndex(y + 10);
+            g.setColor(c);
 
 			int offset = xoffset;
             for (int i = 0; i < curve.getSteps() - 1; i++) {
