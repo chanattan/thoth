@@ -21,9 +21,6 @@ public class Simulator extends JPanel {
 	private Thoth thoth;
 	private Timer timer;
 
-	// Drawings
-	private int dx = 0;
-
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
@@ -40,10 +37,16 @@ public class Simulator extends JPanel {
 	/*
 		This method updates the global state of the panel, mostly pertaining to animations which will get repainted in paintComponent().
 	*/
+
+	// Drawings
+	private int dx = 0;
+	private float hue = 0;
 	private boolean update() {
 		dx += 10;
 		if (dx > this.getWidth())
 			dx = 0;
+        hue += 0.005f;
+        if (hue > 1f) hue -= 1f;  // wrap around after full cycle
 		return true;
 	}
 
@@ -76,6 +79,31 @@ public class Simulator extends JPanel {
 
 		// ========== Main Frame (curves)
 		g.translate(100, 500);
+		this.drawMainFrame(g);
+
+		// ========== Header
+		g.setTransform(lastTransform);
+
+		this.drawHeader(g);
+	}
+
+	private void drawHeader(Graphics2D g) {
+		// Bar
+		g.setColor(Window.THEME_COLOR);
+		g.fillRect(0, 0, this.getWidth(), 26);
+
+		// Animation line
+        Color color = Color.getHSBColor(hue, 1.0f, 1.0f);
+		g.setColor(color);
+		int lineWidth = 100;
+		g.drawLine(dx, 26, Math.min(lineWidth + dx, this.getWidth()), 26);
+		g.setColor(Color.LIGHT_GRAY);
+
+		// Information
+		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
+	}
+
+	private void drawMainFrame(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.
         Color[] colors = {Color.BLUE, Color.RED, Color.GREEN, Color.ORANGE, Color.MAGENTA, Color.CYAN}; // Max 6 curves.
         int colorIndex = 0;
@@ -108,15 +136,5 @@ public class Simulator extends JPanel {
 
             colorIndex++;
         }
-
-		// ========== Header
-		g.setTransform(lastTransform);
-
-		g.setColor(Window.THEME_COLOR);
-		g.fillRect(0, 0, this.getWidth(), 26);
-		g.setColor(Color.RED);
-		g.drawLine(0 + dx, 26, Math.min(100 + dx, this.getWidth()), 26);
-		g.setColor(Color.LIGHT_GRAY);
-		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
 	}
 }
