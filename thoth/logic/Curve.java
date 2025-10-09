@@ -36,9 +36,9 @@ public class Curve {
         return a * factor + b * (1f - factor);
     }
 
-    private static final float FBM_MIN = 2;
-    private static final float FBM_MAX = 30;
-    private static final int CHAOS_FACTOR = 4;
+    private static final float FBM_MIN = 10;
+    private static final float FBM_MAX = 20;
+    private static final int CHAOS_FACTOR = 10;
     // Generates a random curve
     public static Curve generateCurve(int steps) {
         Random rand = new Random();

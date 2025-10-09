@@ -11,10 +11,12 @@ import javax.swing.JFrame;
 public class Window extends JFrame {
 	private Simulator sim;
 
+	public static final Color THEME_COLOR = new Color(43, 42, 42);
+
 	public Window(Thoth thoth) {
 		setSize(new Dimension(1280, 720));
-		getContentPane().setBackground(new Color(54, 54, 54));
-		setBackground(new Color(54, 54, 54));
+		getContentPane().setBackground(THEME_COLOR);
+		setBackground(THEME_COLOR);
 		setAlwaysOnTop(true);
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.X_AXIS));
 		
