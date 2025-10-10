@@ -28,7 +28,7 @@ import thoth.logic.Action;
 @SuppressWarnings("serial")
 public class Simulator extends JPanel {
 
-	private ArrayList<Fund> data;
+	private ArrayList<Fund> funds;
 	private Thoth thoth;
     private final java.util.List<Object[]> points = new ArrayList<Object[]>(); // Invest actions
     private Point2D.Double click = null;
@@ -55,7 +55,8 @@ public class Simulator extends JPanel {
 		int offset = 60;
 		int yoffset = 100;
 		float effect = 0; //this.thoth.getEffect(name);
-		for (Fund f : this.thoth.funds) {
+		this.funds = thoth.funds;
+		for (Fund f : this.funds) {
 			Curve curve = f.getCurve();
 			for (int i = 0; i < curve.getSteps(); i++) {
 				int x1 = (i+1) * offset;
@@ -157,7 +158,7 @@ public class Simulator extends JPanel {
 		Fills in the data about curves for a set of given funds names. 
 	*/
 	public void fillData(ArrayList<Fund> data) {
-		this.data = data;
+		this.funds = data;
 	}
 
 	/*
@@ -302,10 +303,10 @@ public class Simulator extends JPanel {
 		// Information relative to the n displayed funds
 		int maxDisplayedFunds = 8;
 		int yOffset = 30;
-		for (int i = 0; i < this.thoth.funds.size(); i++) {
+		for (int i = 0; i < this.funds.size(); i++) {
 			if (i >= maxDisplayedFunds - 1)
 				break;
-			Fund f = this.thoth.funds.get(i);
+			Fund f = this.funds.get(i);
 			String fundName = f.getName();
 
 			Color c = Simulator.colorFromIndex(i + 10);
@@ -326,8 +327,8 @@ public class Simulator extends JPanel {
 			g.drawOval((int) click.getX() - 8, (int) click.getY() - 8, 16, 16);
 		}
 
-        for (int y = 0; y < this.thoth.funds.size(); y++) {
-			Fund fund = this.thoth.funds.get(y);
+        for (int y = 0; y < this.funds.size(); y++) {
+			Fund fund = this.funds.get(y);
             Curve curve = fund.getCurve();
 			float effect = 0; //this.thoth.getEffect(name);
 
