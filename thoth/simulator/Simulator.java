@@ -9,6 +9,7 @@ import java.awt.Font;
 import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.Point;
+import java.awt.Stroke;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -324,7 +325,16 @@ public class Simulator extends JPanel {
 		// Draw worldPt in the correct coordinate space
 		if (click != null) {
 			g.setColor(Color.ORANGE);
-			g.drawOval((int) click.getX() - 8, (int) click.getY() - 8, 16, 16);
+			int x = (int) click.getX();
+			int y = (int) click.getY();
+			g.drawOval(x - 8, y - 8, 16, 16);
+			// Draw a vertical line to the time axis
+			Stroke oldStroke = g.getStroke();
+			Stroke dashed = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
+                                  0, new float[]{9}, 0);
+  			g.setStroke(dashed);
+			g.drawLine(x, y, x, 160);
+			g.setStroke(oldStroke);
 		}
 
         for (int y = 0; y < this.funds.size(); y++) {
