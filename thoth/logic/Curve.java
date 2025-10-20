@@ -44,6 +44,7 @@ public class Curve {
         this.prev_fbm = 0f;
 
         this.values = new ArrayList<Integer>();
+        this.values.add((int)this.rng.nextFloat(0f, 50f));
     }
 
     /**
@@ -58,8 +59,8 @@ public class Curve {
      */
     public static Curve generateCurve() {
         Random r = new Random();
-        float fbm_min_movement = r.nextFloat(0, 20);
-        float fbm_max_movement = r.nextFloat(fbm_min_movement, 50);
+        float fbm_min_movement = r.nextFloat(-50, -20);
+        float fbm_max_movement = r.nextFloat(20, 50);
         float chaos_factor = r.nextFloat(0, 1);
 
         return new Curve(fbm_min_movement, fbm_max_movement, chaos_factor);
