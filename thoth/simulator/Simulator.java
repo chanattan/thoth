@@ -61,9 +61,10 @@ public class Simulator extends JPanel {
 			Curve curve = f.getCurve();
 			for (int i = 0; i < curve.getSteps(); i++) {
 				int x1 = (i+1) * offset;
-				int y1 = curve.getValue(i, effect) + yoffset;
+				int val = (int) curve.nextValue(effect);
+				int y1 = val + yoffset;
 				Point2D.Double point = new Point2D.Double(x1, y1);
-				points.add(new Object[] {point, new Action(i, -curve.getValue(i, effect), f)});
+				points.add(new Object[] {point, new Action(i, -val, f)});
 			}
 		}
 
@@ -349,14 +350,14 @@ public class Simulator extends JPanel {
             for (int i = 0; i < curve.getSteps() - 1; i++) {
 				int x1 = (i+1) * offset;
 				int x2 = (i+2) * offset;
-				int y1 = curve.getValue(i, effect) + yoffset;
-				int y2 = curve.getValue(i+1, effect) + yoffset;
+				int y1 = (int) curve.nextValue(effect) + yoffset;
+				int y2 = (int) curve.nextValue(effect) + yoffset;
                 g.drawLine(x1, y1, x2, y2);
 				g.fillOval(x1 - 3, y1 - 3, 6, 6);
             }
 
 			int xlast = curve.getSteps() - 1;
-			int ylast = curve.getValue(xlast, effect) + yoffset;
+			int ylast = (int) curve.nextValue(effect) + yoffset;
 			g.fillOval((xlast + 1) * offset - 3, ylast - 3, 6, 6);
 
             colorIndex++;

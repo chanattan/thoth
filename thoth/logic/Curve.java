@@ -11,7 +11,7 @@ public class Curve {
 
     private Random rng;
 
-    private int elapsed_steps;
+    private int elapsed_steps = 0; // Default horizon 0.
     /**
      * Creates a new curve generating stream with given parameters.
 
@@ -52,6 +52,18 @@ public class Curve {
     */
     public int getSteps() {
         return this.elapsed_steps;
+    }
+
+    /**
+     * Generates a curve with random parameters.
+     */
+    public static Curve generateCurve() {
+        Random r = new Random();
+        float fbm_min_movement = r.nextFloat(0, 20);
+        float fbm_max_movement = r.nextFloat(fbm_min_movement, 50);
+        float chaos_factor = r.nextFloat(0, 1);
+
+        return new Curve(fbm_min_movement, fbm_max_movement, chaos_factor);
     }
 
     /**

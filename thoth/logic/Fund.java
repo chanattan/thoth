@@ -19,22 +19,21 @@ public class Fund {
         return this.curve;
     }
 
-    static final int INITIAL_STEPS = 20;
     static final Fund[] funds = {
-        new Fund("BNP Paribas", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Netflix", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Amazon", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Apple", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Tesla", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Google", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Microsoft", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Facebook", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Uber", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Airbus", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Boeing", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("Spotify", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("TotalEnergies", Curve.generateCurve(INITIAL_STEPS)),
-        new Fund("BNP Paribas", Curve.generateCurve(INITIAL_STEPS))
+        new Fund("BNP Paribas", Curve.generateCurve()),
+        new Fund("Netflix", Curve.generateCurve()),
+        new Fund("Amazon", Curve.generateCurve()),
+        new Fund("Apple", Curve.generateCurve()),
+        new Fund("Tesla", Curve.generateCurve()),
+        new Fund("Google", Curve.generateCurve()),
+        new Fund("Microsoft", Curve.generateCurve()),
+        new Fund("Facebook", Curve.generateCurve()),
+        new Fund("Uber", Curve.generateCurve()),
+        new Fund("Airbus", Curve.generateCurve()),
+        new Fund("Boeing", Curve.generateCurve()),
+        new Fund("Spotify", Curve.generateCurve()),
+        new Fund("TotalEnergies", Curve.generateCurve()),
+        new Fund("BNP Paribas", Curve.generateCurve())
     };
 
     public static ArrayList<Fund> generateFunds(int n) {
