@@ -1,5 +1,6 @@
 package thoth.simulator;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -21,8 +22,13 @@ public class Window extends JFrame {
 		setAlwaysOnTop(true);
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.X_AXIS));
 		
-		JButton btnNewButton = new JButton("Invest");
-		btnNewButton.addActionListener((ActionEvent e) -> {
+		JButton investBtn = new JButton("Invest");
+		investBtn.setBackground(Color.ORANGE);
+		investBtn.setForeground(Color.DARK_GRAY);
+		investBtn.setOpaque(true);
+        investBtn.setBorderPainted(false); 
+        investBtn.setFocusPainted(false);
+		investBtn.addActionListener((ActionEvent e) -> {
             System.out.println("Investing...");
                 });
 		JLabel capitalLabel = new JLabel("Capital: " + thoth.player.getCapital());
@@ -30,8 +36,8 @@ public class Window extends JFrame {
 		Simulator simulator = new Simulator(thoth);
 		this.sim = simulator;
 		getContentPane().add(simulator);
-		getContentPane().add(btnNewButton);
-		getContentPane().add(capitalLabel);
+		getContentPane().add(investBtn, BorderLayout.CENTER);
+		getContentPane().add(capitalLabel, BorderLayout.LINE_END);
         setVisible(true);
 	}
 
