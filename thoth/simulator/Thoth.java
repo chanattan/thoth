@@ -1,7 +1,12 @@
 package thoth.simulator;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import javax.swing.*;
 import thoth.logic.Fund;
 import thoth.logic.Player;
@@ -22,10 +27,12 @@ public class Thoth {
     }
 
     // Returns the effect for a given news.
-    public float getEffect(String fundName) {
-        for (News n : this.news) {
+    public float useEffect(String fundName) {
+        List<News> snews = new ArrayList<News>(this.news).reversed();
+        // Get the last effect
+        for (News n : snews) {
             if (n.correspondsTo(fundName)) { // TODO: remplacer par fund reference
-                return n.getEffect();
+                return n.useEffect(); // Deplete the given effect.
             }
         }
         return 0f;
@@ -33,7 +40,7 @@ public class Thoth {
 
     // Updates news
     public void seekNews(String fundName) {
-        if (r.nextFloat() < .3) { // 30% chance of having a new given any fund name.
+        if (r.nextFloat() < .01) { // 1% chance of having a new given any fund name.
             News n = News.yieldNew(fundName);
             if (n != null) {
                 this.news.add(n);

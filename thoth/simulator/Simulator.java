@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
+import java.awt.FontMetrics;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -143,9 +145,12 @@ public class Simulator extends JPanel {
                     public void actionPerformed(ActionEvent e) {
 						// Génération des nouvelles valeurs.
 						for (Fund f : funds) {
+							// Mettre à jour news
+							thoth.seekNews(f.getName());
+							// Mettre à jour valeurs
 							Curve c = f.getCurve();
-							float effect = thoth.getEffect(f.getName());
-							int nextVal = (int) c.nextValue(effect); // TODO: effect
+							float effect = thoth.useEffect(f.getName()); // TODO: the effect is permanent. make it on a period, for now only once.
+							int nextVal = (int) c.nextValue(effect);
 							c.storeValue(nextVal);
 							repaint();
 						}
@@ -239,6 +244,9 @@ public class Simulator extends JPanel {
 
 		this.drawMeta(g);
 
+		// ========== News
+		this.drawNews(g);
+
 		// ========== Header
         this.setOptions(g);
 		g.setTransform(lastTransform);
@@ -292,6 +300,63 @@ public class Simulator extends JPanel {
         g2.draw(new Line2D.Double(0.5, h - 0.5, w - 0.5, h - 0.5));
         // Axe Y à gauche
         g2.draw(new Line2D.Double(0.5, 0.5, 0.5, h - 0.5));
+	}
+
+	// TODO: move into another panel.
+	private void drawNews(Graphics2D g) {
+		int offset = 20;
+		int x1 = getWidth() - 400;
+		// 7 news
+		List<News> pool = this.thoth.news.subList(Math.max(0, this.thoth.news.size() - 8), this.thoth.news.size());
+		for (int i = 0; i < pool.size() - 1; i++) {
+			News n = pool.get(i);
+			g.setColor(Color.WHITE);
+			int x = x1 + offset;
+			int y = 30 + (i + 1) * 20; // espacement vertical
+
+			FontMetrics fm = g.getFontMetrics();
+			String txt = n.getTitle() + " (" + n.getEffect() + "%)";
+			int textWidth = fm.stringWidth(txt);
+			int textHeight = fm.getHeight();
+
+			// fond blanc derrière le texte
+			g.setColor(Color.WHITE);
+			g.fillRect(x, y - fm.getAscent(), Math.max(textWidth + 6, 350), textHeight);
+
+			// bordure du fond (optionnel)
+			g.setColor(Color.LIGHT_GRAY);
+			g.drawRect(x, y - fm.getAscent(), Math.max(textWidth + 6, 350), textHeight);
+
+			// texte
+			Color c = (n.getEffect() > 0) ? Color.GREEN : Color.RED;
+			this.drawColoredParenthesesText(g, txt, x + 3, y, c);
+		}
+	}
+
+	private void drawColoredParenthesesText(Graphics2D g2, String text, int x, int y, Color parenColor) {
+		FontMetrics fm = g2.getFontMetrics();
+		boolean insideParen = false;
+
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+
+			// switch color based on whether we're inside parentheses
+			if (c == '(') {
+				insideParen = true;
+				g2.setColor(parenColor);
+			} else if (c == ')') {
+				g2.setColor(parenColor);
+				insideParen = false; // will revert on next char
+			} else if (!insideParen) {
+				g2.setColor(Color.DARK_GRAY);
+			}
+
+			// draw the character
+			g2.drawString(String.valueOf(c), x, y);
+
+			// advance x
+			x += fm.charWidth(c);
+		}
 	}
 
 	private void drawHeader(Graphics2D g) {

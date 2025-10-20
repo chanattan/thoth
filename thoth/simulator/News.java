@@ -8,6 +8,7 @@ public class News {
     private float effect;
     private String title;
     private String description;
+    private boolean used = false;
 
     /// Initializes a news item.
     public News(String title, String description, float effect) {
@@ -29,6 +30,17 @@ public class News {
     /// Returns the measurable effect on stocks.
     public float getEffect() {
         return this.effect;
+    }
+
+    /**
+     * Deplete the News' effect.
+     */
+    public float useEffect() {
+        if (!used) {
+            this.used = true;
+            return getEffect();
+        }
+        return 0f;
     }
 
     /*
