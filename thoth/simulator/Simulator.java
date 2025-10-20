@@ -56,20 +56,7 @@ public class Simulator extends JPanel {
 			}
         }).start();
 
-		int offset = 60;
-		int yoffset = 100;
-		float effect = 0; //this.thoth.getEffect(name);
 		this.funds = thoth.funds;
-		for (Fund f : this.funds) {
-			Curve curve = f.getCurve();
-			for (int i = 0; i < curve.getSteps(); i++) {
-				int x1 = (i+1) * offset;
-				int val = (int) curve.nextValue(effect);
-				int y1 = val + yoffset;
-				Point2D.Double point = new Point2D.Double(x1, y1);
-				points.add(new Object[] {point, new Action(i, -val, f)});
-			}
-		}
 
 		MouseAdapter ma = new MouseAdapter() {
 
@@ -88,7 +75,7 @@ public class Simulator extends JPanel {
 					AffineTransform screenToWorld = completeTransform.createInverse();
 					worldPt = screenToWorld.transform(e.getPoint(), null);
 
-					double threshold = 20 / scale; 
+					double threshold = 10 / scale; 
 					click = null;
 					for (Object[] o : points) {
 						Point2D.Double p = (Point2D.Double) o[0];
@@ -143,7 +130,7 @@ public class Simulator extends JPanel {
         addMouseMotionListener(ma);
 
 		// Global timer
-		this.time = new Timer(2000, updateFunds());
+		this.time = new Timer(500, updateFunds());
 		this.time.start();
 	}
 
@@ -160,6 +147,21 @@ public class Simulator extends JPanel {
 							int nextVal = (int) c.nextValue(0); // TODO: effect
 							c.storeValue(nextVal);
 							repaint();
+						}
+
+						// Mettre à jour les points pour clicks
+						int offset = 20;
+						int yoffset = -160;
+						for (Fund f : funds) {
+							Curve curve = f.getCurve();
+							int[] values = curve.getLastValues(0);
+							for (int i = 0; i < curve.getSteps(); i++) {
+								int x1 = (i+1) * offset;
+								int val = (int) values[i];
+								int y1 = val + yoffset;
+								Point2D.Double point = new Point2D.Double(x1, -y1);
+								points.add(new Object[] {point, new Action(i, -val, f)});
+							}
 						}
                     }
                 };
