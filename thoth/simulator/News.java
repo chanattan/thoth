@@ -205,6 +205,30 @@ public class News {
         return news;
     }
 
+    /**
+     * Returns if the given news correspond to a given fund name.
+     */
+    public boolean correspondsTo(String fundName) {
+        return this.getTitle().toLowerCase().contains(fundName.toLowerCase());
+    }
+
+    /**
+     * Yields one news for a given fund name.
+     */
+    public static News yieldNew(String fundName) {
+        Random r = new Random();
+        ArrayList<News> correspondings = new ArrayList<News>();
+        for (News n : defined_news) {
+            if (n.correspondsTo(fundName)) {
+                correspondings.add(n);
+            }
+        }
+        if (!correspondings.isEmpty()) {
+            return correspondings.get(r.nextInt(0, correspondings.size() - 1));
+        }
+        return null;
+    }
+
     public static void test(String[] args) {
         System.out.println(generateNews(10).stream().map(News::getTitle).collect(Collectors.toList()));
     }

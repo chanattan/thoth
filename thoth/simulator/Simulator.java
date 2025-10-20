@@ -144,7 +144,8 @@ public class Simulator extends JPanel {
 						// Génération des nouvelles valeurs.
 						for (Fund f : funds) {
 							Curve c = f.getCurve();
-							int nextVal = (int) c.nextValue(0); // TODO: effect
+							float effect = thoth.getEffect(f.getName());
+							int nextVal = (int) c.nextValue(effect); // TODO: effect
 							c.storeValue(nextVal);
 							repaint();
 						}
