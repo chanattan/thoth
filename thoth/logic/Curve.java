@@ -1,5 +1,6 @@
 package thoth.logic;
 
+import java.util.ArrayList;
 import java.util.Random;
 public class Curve {
     private float fmb_min_movement;
@@ -11,7 +12,9 @@ public class Curve {
 
     private Random rng;
 
-    private int elapsed_steps = 0; // Default horizon 0.
+    // Values are stored.
+    private ArrayList<Integer> values; // Default horizon 0.
+
     /**
      * Creates a new curve generating stream with given parameters.
 
@@ -20,13 +23,7 @@ public class Curve {
      * @param chaos_factor is a value between 0 and 1 indicating how chaotic the curve should be
     */
     public Curve(float fbm_min_movement, float fbm_max_movement, float chaos_factor) {
-        this.rng = new Random();
-        this.chaos_factor = chaos_factor;
-        this.fmb_min_movement = fbm_min_movement;
-        this.fbm_max_movement = fbm_max_movement;
-
-        this.prev_value = 0f;
-        this.prev_fbm = 0f;
+        this(fbm_min_movement, fbm_max_movement, chaos_factor, new Random().nextInt());
     }
 
     /**
@@ -45,13 +42,15 @@ public class Curve {
 
         this.prev_value = 0f;
         this.prev_fbm = 0f;
+
+        this.values = new ArrayList<Integer>();
     }
 
     /**
      * @return the number of elapsed steps.
     */
     public int getSteps() {
-        return this.elapsed_steps;
+        return this.values.size();
     }
 
     /**
@@ -76,6 +75,22 @@ public class Curve {
         this.prev_value += event_effect;
 
         return lerp(this.prev_value, this.prev_fbm, chaos_factor);
+    }
+
+    /**
+     * Returns a sub-array of the current values, considering the offset for the beginning.
+     * I.e., the interval [offset, lastValue].
+     */
+    public int[] getLastValues(int offset) {
+        int[] lastValues = new int[this.values.size() - offset];
+        for (int i = 0; i < this.values.size() - offset; i++) {
+            lastValues[i] = this.values.get(i);
+        }
+        return lastValues;
+    }
+
+    public void storeValue(float value) {
+        this.values.add((int) value);
     }
 
     private float lerp(float a, float b, float factor) {

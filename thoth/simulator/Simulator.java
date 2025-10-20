@@ -10,6 +10,8 @@ import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.Point;
 import java.awt.Stroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -35,6 +37,7 @@ public class Simulator extends JPanel {
     private Point2D.Double click = null;
 	private AffineTransform currTransform = null;
 	private Point2D worldPt;
+	private Timer time;
 
 	// Mouse dragging
     private double offsetX = 0;
@@ -138,6 +141,28 @@ public class Simulator extends JPanel {
         };
         addMouseListener(ma);
         addMouseMotionListener(ma);
+
+		// Global timer
+		this.time = new Timer(2000, updateFunds());
+		this.time.start();
+	}
+
+	/**
+	 * Global timer update method.
+	 */
+	private ActionListener updateFunds() {
+		return new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+						// Génération des nouvelles valeurs.
+						for (Fund f : funds) {
+							Curve c = f.getCurve();
+							int nextVal = (int) c.nextValue(0); // TODO: effect
+							c.storeValue(nextVal);
+							repaint();
+						}
+                    }
+                };
 	}
 
 	/*
@@ -320,8 +345,8 @@ public class Simulator extends JPanel {
 	private void drawMainFrame(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.
         int colorIndex = 0;
-		int xoffset = 60;
-		int yoffset = 100;
+		int xoffset = 20;
+		int yoffset = -160;
 
 		// Draw worldPt in the correct coordinate space
 		if (click != null) {
@@ -338,7 +363,8 @@ public class Simulator extends JPanel {
 			g.setStroke(oldStroke);
 		}
 
-        for (int y = 0; y < this.funds.size(); y++) {
+		// Draw curves
+		for (int y = 0; y < this.funds.size(); y++) {
 			Fund fund = this.funds.get(y);
             Curve curve = fund.getCurve();
 			float effect = 0; //this.thoth.getEffect(name);
@@ -347,18 +373,21 @@ public class Simulator extends JPanel {
             g.setColor(c);
 
 			int offset = xoffset;
-            for (int i = 0; i < curve.getSteps() - 1; i++) {
+			int[] values = curve.getLastValues(0); // Get all values for now.
+            for (int i = 0; i < values.length - 1; i++) {
 				int x1 = (i+1) * offset;
 				int x2 = (i+2) * offset;
-				int y1 = (int) curve.nextValue(effect) + yoffset;
-				int y2 = (int) curve.nextValue(effect) + yoffset;
-                g.drawLine(x1, y1, x2, y2);
-				g.fillOval(x1 - 3, y1 - 3, 6, 6);
+				int y1 = (int) values[i] + yoffset;
+				int y2 = (int) values[i+1] + yoffset;
+                g.drawLine(x1, -y1, x2, -y2);
+				g.fillOval(x1 - 3, -y1 - 3, 6, 6);
             }
 
-			int xlast = curve.getSteps() - 1;
-			int ylast = (int) curve.nextValue(effect) + yoffset;
-			g.fillOval((xlast + 1) * offset - 3, ylast - 3, 6, 6);
+			if (values.length > 0) {
+				int xlast = curve.getSteps() - 1;
+				int ylast = (int) values[values.length - 1] + yoffset;
+				g.fillOval((xlast + 1) * offset - 3, -ylast - 3, 6, -6);
+			}
 
             colorIndex++;
         }
