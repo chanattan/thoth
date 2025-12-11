@@ -28,7 +28,7 @@ public class Thoth {
         // Get the last effect
         for (News n : snews) {
             if (n.correspondsTo(fundName)) { // TODO: remplacer par fund reference
-                return n.useEffect(); // Deplete the given effect.
+                return n.getEffect(); // Deplete the given effect.
             }
         }
         return 0f;
