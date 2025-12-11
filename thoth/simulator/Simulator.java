@@ -132,7 +132,7 @@ public class Simulator extends JPanel {
         addMouseMotionListener(ma);
 
 		// Global timer
-		this.time = new Timer(500, updateFunds());
+		this.time = new Timer(1000, updateFunds());
 		this.time.start();
 	}
 
@@ -261,8 +261,8 @@ public class Simulator extends JPanel {
 	}
 
 	private void drawGrid(Graphics2D g2) {
-		int w = getWidth();
-        int h = getHeight();
+		int w = getWidth() * 4;
+        int h = getHeight() * 4;
 		int minorStep = 20;
 		int majorStep = 80;
 		Color minorColor = new Color(255, 255, 255, 20);

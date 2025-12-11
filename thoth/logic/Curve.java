@@ -59,7 +59,7 @@ public class Curve {
      */
     public static Curve generateCurve() {
         Random r = new Random();
-        float fbm_min_movement = -20;
+        float fbm_min_movement = -5;
         float fbm_max_movement = 20;
         float chaos_factor = r.nextFloat(0, 1);
 
