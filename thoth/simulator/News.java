@@ -6,15 +6,17 @@ import java.util.stream.Collectors;
 
 public class News {
     private float effect;
+    private float persistence;
     private String title;
     private String description;
-    private boolean used = false;
+    private int elapsed = 0; // TODO: refactor this for other timesteps than 1sec
 
     /// Initializes a news item.
-    public News(String title, String description, float effect) {
+    public News(String title, String description, float effect, float persistence) {
         this.title = title;
         this.description = description;
         this.effect = effect;
+        this.persistence = persistence;
     }
 
     /// Returns the title of this news.
@@ -29,18 +31,20 @@ public class News {
 
     /// Returns the measurable effect on stocks.
     public float getEffect() {
-        return this.effect;
+        if (this.elapsed >= this.persistence) {
+            return 0.0;
+        }
+
+        float peak = this.persistence / 2;
+        if (this.elapsed >= peak) {
+            return lerp(0, this.effect, (this.elapsed - peak) / peak);
+        } else {
+            return lerp(this.effect, 0, this.elapsed / peak);
+        }
     }
 
-    /**
-     * Deplete the News' effect.
-     */
-    public float useEffect() {
-        if (!used) {
-            this.used = true;
-            return getEffect();
-        }
-        return 0f;
+    private float lerp(float a, float b, float factor) {
+        return a * factor + b * (1f - factor);
     }
 
     /*
