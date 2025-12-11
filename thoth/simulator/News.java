@@ -6,17 +6,16 @@ import java.util.stream.Collectors;
 
 public class News {
     private float effect;
-    private float persistence;
+    private float persistence = 10.0;
     private String title;
     private String description;
-    private int elapsed = 0; // TODO: refactor this for other timesteps than 1sec
+    private float elapsed = 0.0; // TODO: refactor this for other timesteps than 1sec
 
     /// Initializes a news item.
-    public News(String title, String description, float effect, float persistence) {
+    public News(String title, String description, float effect) {
         this.title = title;
         this.description = description;
         this.effect = effect;
-        this.persistence = persistence;
     }
 
     /// Returns the title of this news.
@@ -36,10 +35,12 @@ public class News {
         }
 
         float peak = this.persistence / 2;
-        if (this.elapsed >= peak) {
-            return lerp(0, this.effect, (this.elapsed - peak) / peak);
+        float elapsed = this.elapsed;
+        this.elapsed += 1.0; 
+        if (elapsed >= peak) {
+            return lerp(0, this.effect, (elapsed - peak) / peak);
         } else {
-            return lerp(this.effect, 0, this.elapsed / peak);
+            return lerp(this.effect, 0, elapsed / peak);
         }
     }
 
