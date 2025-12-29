@@ -29,6 +29,7 @@ import javax.swing.Timer;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
 import thoth.logic.Action;
+import thoth.logic.Player;
 
 @SuppressWarnings("serial")
 public class Simulator extends JPanel {
@@ -39,13 +40,17 @@ public class Simulator extends JPanel {
     private Point2D.Double click = null;
 	private AffineTransform currTransform = null;
 	private Point2D worldPt;
-	private Timer time;
+	private final Timer time;
+	private int currentTimeStep = 0; // mois
 
 	// Mouse dragging
     private double offsetX = 0;
     private double offsetY = 0;
     private double scale = 1.0;
     private Point lastDragPoint = null;
+
+	// Investing
+	public Fund selectedFund = null;
 	
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
@@ -85,7 +90,8 @@ public class Simulator extends JPanel {
 						double dist = worldPt.distance(p);
 						if (dist < threshold) {
 							click = p;
-							System.out.println("Investing " + a.getValue() + " in Fund " + a.getFund().getName());
+							System.out.println("Considering " + a.getValue() + " in Fund " + a.getFund().getName());
+							selectedFund = a.getFund();
 							break;
 						}
 					}
@@ -143,6 +149,10 @@ public class Simulator extends JPanel {
 		return new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
+						// Temps global.
+						currentTimeStep += 1;
+						thoth.window.updateTimeLabel(currentTimeStep);
+
 						// Génération des nouvelles valeurs.
 						for (Fund f : funds) {
 							// Mettre à jour news
@@ -153,6 +163,9 @@ public class Simulator extends JPanel {
 							int nextVal = (int) c.nextValue(effect);
 							c.storeValue(nextVal);
 							repaint();
+
+							// Plus-value des actions pour l'utilisateur : màj.
+							// TODO.
 						}
 
 						// Mettre à jour les points pour clicks
@@ -171,6 +184,12 @@ public class Simulator extends JPanel {
 						}
                     }
                 };
+	}
+
+	public int getTime() {
+		// Returns the current time step of the simulation based on the timer.
+		// Assuming each tick is a month.
+		return this.currentTimeStep;
 	}
 
 	/*

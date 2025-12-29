@@ -15,7 +15,7 @@ public class Player {
 
     public Player() {
         Random rand = new Random();
-        this.capital = 100000 + rand.nextInt(300000);
+        this(100000 + rand.nextInt(300000));
     }
 
     public double getCapital() {
@@ -39,7 +39,7 @@ public class Player {
         // updateCapital();
     }
 
-    private static class InsufficientCapital extends Exception {
+    public static class InsufficientCapital extends Exception {
 
         private String fundName;
         private double value;

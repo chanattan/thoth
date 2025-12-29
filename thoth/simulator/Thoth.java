@@ -13,6 +13,7 @@ public class Thoth {
     public ArrayList<Fund> funds;
     public Player player;
     public Random r;
+    public Window window;
 
     public Thoth() {
         // Initializes simulation.
@@ -20,6 +21,7 @@ public class Thoth {
         this.funds = Fund.generateFunds(5);
         this.player = new Player();
         this.r = new Random();
+        this.window = null;
     }
 
     // Returns the effect for a given news.
@@ -48,6 +50,7 @@ public class Thoth {
         SwingUtilities.invokeLater(() -> {
             Thoth thoth = new Thoth();
             Window w = new Window(thoth);
+            thoth.window = w;
             w.getSimulator().fillData(thoth.funds);
         });
     }
