@@ -151,7 +151,6 @@ public class Simulator extends JPanel {
                     public void actionPerformed(ActionEvent e) {
 						// Temps global.
 						currentTimeStep += 1;
-						thoth.window.updateTimeLabel(currentTimeStep);
 
 						// Génération des nouvelles valeurs.
 						for (Fund f : funds) {
@@ -167,6 +166,9 @@ public class Simulator extends JPanel {
 							// Plus-value des actions pour l'utilisateur : màj.
 							// TODO.
 						}
+
+						// Màj panel
+						thoth.window.investorPanel.updatePanel(thoth);
 
 						// Mettre à jour les points pour clicks
 						int offset = 20;

@@ -31,12 +31,16 @@ public class Player {
         if (a.getValue() > this.capital)
             throw new InsufficientCapital(a);
         this.capital -= a.getValue();
-        this.actions.getOrDefault(a.getFund(), new ArrayList<Action>()).add(a);
+        this.actions.computeIfAbsent(a.getFund(), k -> new ArrayList<Action>()).add(a);
     }
 
     public void sellAction(Action a) {
         // TODO.
         // updateCapital();
+    }
+
+    public HashMap<Fund, ArrayList<Action>> getActions() {
+        return this.actions;
     }
 
     public static class InsufficientCapital extends Exception {
