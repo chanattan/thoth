@@ -4,7 +4,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JPopupMenu;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
 import thoth.simulator.Thoth;
 
 public class AI {
@@ -95,32 +96,34 @@ public class AI {
         return (float)(lastValues[lastValues.length - 1] - lastValues[0]) / lastValues[0]; // Percentage increase
     }
 
-    public JPopupMenu popInfo(JComponent component, int x, int y) {
-        JPopupMenu popup = new JPopupMenu();
-
+    public Popup popInfo(JComponent component, int x, int y) {
+        JLabel fundLabel = null;
+        JLabel noFundLabel = null;
         Prediction prediction = predictNextMove();
         if (prediction.fund != null) {
             String fundName = prediction.fund.getName();
-            JLabel fundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:orange'>> Best Fund to Invest:</p> <b>" + fundName + "</b><br>" +
+            fundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:orange'>> Best Fund to Invest:</p> <b align='center'>" + fundName + "</b><br>" +
                 " | Expected Increase: " + prediction.getExpectedReturn() + "<br>" +
                 " | Confidence Level: " + prediction.getConfidenceLevel() + "<br>" +
                 " <br> " +
                 " Note: This prediction is based on the last five months of the fund's performance.<br>" +
                 " <i>(Click anywhere to close this popup)</i></html>");
-            popup.add(fundLabel);
+            //popup.add(fundLabel);
         } else {
-            JLabel noFundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:red'>> No clear best fund to invest.</p><br>" +
+            noFundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:red'>> No clear best fund to invest.</p><br>" +
                 " | Confidence Level: 0<br>"
                 + "<br>Note: Thoth is unable to determine with decent confidence which<br>fund is best to invest in at this time.<br>" +
                 "<i>(Click anywhere to close this popup)</i></html>");
-            popup.add(noFundLabel);
+            //popup.add(noFundLabel);
         }
+
+        Popup popup = PopupFactory.getSharedInstance().getPopup(component, fundLabel != null ? fundLabel : noFundLabel, x, y);
         
         // show popup at mouse position
         component.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                popup.show(component, e.getX(), e.getY());
+                popup.show();
             }
         });
         return popup;

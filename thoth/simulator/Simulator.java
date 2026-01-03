@@ -26,6 +26,7 @@ import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.Popup;
 import javax.swing.Timer;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
@@ -49,7 +50,7 @@ public class Simulator extends JPanel {
     private double offsetY = 0;
     private double scale = 1.0;
     private Point lastDragPoint = null;
-	private JPopupMenu popup = null; // helper AI
+	private Popup popup = null; // helper AI
 
 	// Investing
 	public Fund selectedFund = null;
@@ -76,7 +77,7 @@ public class Simulator extends JPanel {
 				}
 
 				if (popup != null) {
-					popup.setVisible(false);
+					popup.hide();
 					popup = null;
 				}
 
@@ -100,6 +101,7 @@ public class Simulator extends JPanel {
 							System.out.println("Considering Fund " + f.getName());
 							if (popup == null) {
 								popup = thoth.AI.popInfo(Simulator.this, e.getX(), e.getY());
+								popup.show();
 							}
 							selectedFund = f;
 							break;

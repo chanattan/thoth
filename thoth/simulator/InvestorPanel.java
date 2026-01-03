@@ -58,7 +58,7 @@ public class InvestorPanel extends JPanel {
 				investmentField.setText("" + thoth.player.getCapital());
 			}
         });
-        investButton = new JButton("Investir");
+        investButton = new JButton("Invest");
         investButton.addActionListener((ActionEvent e) -> {
             Fund selectedFund = thoth.window.getSimulator().selectedFund;
 				if (selectedFund != null) {
