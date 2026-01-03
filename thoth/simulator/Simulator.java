@@ -22,6 +22,8 @@ import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.FontMetrics;
+import java.awt.Rectangle;
+import java.awt.geom.Rectangle2D;
 import java.util.List;
 
 import javax.swing.JPanel;
@@ -54,6 +56,9 @@ public class Simulator extends JPanel {
 
 	// Investing
 	public Fund selectedFund = null;
+
+	// Display
+	private Rectangle thothButton;
 	
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
@@ -72,13 +77,20 @@ public class Simulator extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (currTransform == null) {
-					return;
+				// AI popup
+				Point mousePos = e.getPoint();
+				if (mousePos != null && thothButton.contains(mousePos)) {
+					if (popup != null) {
+						popup.hide();
+						popup = null;
+					} else {
+						popup = thoth.AI.popInfo(Simulator.this, mousePos.x, mousePos.y);
+						popup.show();
+					}
 				}
 
-				if (popup != null) {
-					popup.hide();
-					popup = null;
+                if (currTransform == null) {
+					return;
 				}
 
 				try {
@@ -99,10 +111,6 @@ public class Simulator extends JPanel {
 						if (dist < threshold) {
 							click = p;
 							System.out.println("Considering Fund " + f.getName());
-							if (popup == null) {
-								popup = thoth.AI.popInfo(Simulator.this, e.getX(), e.getY());
-								popup.show();
-							}
 							selectedFund = f;
 							break;
 						}
@@ -158,13 +166,10 @@ public class Simulator extends JPanel {
 	 * Global timer update method.
 	 */
 	private ActionListener updateGlobal() {
-		return new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						updateFunds();
-						thoth.window.investorPanel.updateInventoryPanel();
-					}
-				};
+		return (ActionEvent e) -> {
+                    updateFunds();
+                    thoth.window.investorPanel.updateInventoryPanel();
+                };
 	}
 	private void updateFunds() {
 		// Temps global.
@@ -410,6 +415,12 @@ public class Simulator extends JPanel {
 
 		// Information
 		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
+
+		thothButton = new Rectangle(10, getHeight() - 30, 100, 20);
+		g.setColor(Color.DARK_GRAY);
+		g.fill(thothButton);
+		g.setColor(Color.ORANGE);
+		g.drawString("Thoth, guide me.", 12, getHeight() - 16);
 	}
 
 	public static Color colorFromIndex(int index) {
