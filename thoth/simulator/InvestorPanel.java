@@ -1,10 +1,14 @@
 package thoth.simulator;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import thoth.logic.Action;
 import thoth.logic.Fund;
@@ -28,15 +32,19 @@ public class InvestorPanel extends JPanel {
      * Le panel global se met à jour automatiquement et en temps réel, il est situé sur la droite de la fenêtre principale.
      */
 
-    private Thoth thoth;
+    private final Thoth thoth;
 
     private double capital;
     private long elapsedTime;
     private JTextField investmentField;
-    private JButton investButton;
+    private final JButton investButton;
     private JPanel inventoryPanel;
+    private ArrayList<Object[]> shownActions;
     private JLabel capitalLabel;
-    private JLabel timeLabel;
+    private final JLabel timeLabel;
+    private JPanel actionsListPanel;
+
+    private static final DecimalFormat df = new DecimalFormat("0.00");
 
     public InvestorPanel(Thoth thoth) {
         this.thoth = thoth;
@@ -54,9 +62,8 @@ public class InvestorPanel extends JPanel {
         investButton.addActionListener((ActionEvent e) -> {
             Fund selectedFund = thoth.window.getSimulator().selectedFund;
 				if (selectedFund != null) {
-					Action a = new Action(thoth.window.getSimulator().getTime(), Float.parseFloat(investmentField.getText()), selectedFund);
 					try {
-						thoth.player.invest(a);
+						thoth.player.invest(thoth.window.getSimulator().getTime(), Double.parseDouble(investmentField.getText()), selectedFund);
 						capitalLabel.setText("Capital: " + thoth.player.getCapital());
                         updateInventoryPanel();
 					} catch (Player.InsufficientCapital ex) {
@@ -66,6 +73,11 @@ public class InvestorPanel extends JPanel {
         });
 
 		timeLabel = new JLabel("Month: 0");
+        shownActions = new ArrayList<Object[]>();
+        actionsListPanel = new JPanel();
+        actionsListPanel.setLayout(
+            new javax.swing.BoxLayout(actionsListPanel, javax.swing.BoxLayout.Y_AXIS)
+        );
         
         setupPanel();
     }
@@ -81,9 +93,9 @@ public class InvestorPanel extends JPanel {
     private void setupPanel() {
         setLayout(new BorderLayout());
         add(createCapitalPanel(), BorderLayout.NORTH);
-        add(createInvestmentPanel(), BorderLayout.CENTER);
         inventoryPanel = createInventoryPanel();
-        add(inventoryPanel, BorderLayout.SOUTH);
+        add(inventoryPanel, BorderLayout.CENTER);
+        add(createInvestmentPanel(), BorderLayout.SOUTH);
         add(createTimePanel(), BorderLayout.EAST);
     }
 
@@ -108,20 +120,42 @@ public class InvestorPanel extends JPanel {
     }
 
     private JPanel createInventoryPanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.BLACK);
+        
+        JLabel title = new JLabel("Inventory");
+        panel.add(title, BorderLayout.NORTH);
+
+        actionsListPanel = new JPanel();
+        actionsListPanel.setBackground(Color.BLACK);
+        actionsListPanel.setLayout(new javax.swing.BoxLayout(
+            actionsListPanel, javax.swing.BoxLayout.Y_AXIS
+        ));
+
+        JScrollPane scrollPane = new JScrollPane(actionsListPanel);
+        scrollPane.setBackground(Color.BLACK);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
         return panel;
     }
 
-    private void updateInventoryPanel() {
+    public void updateInventoryPanel() {
         // Each action is a row with its details and a sell button.
         
         Player p = this.thoth.player;
         for (Fund f : p.getActions().keySet()) {
-            for (Action a : p.getActions().get(f)) {
+            Action a = p.getActions().get(f);
+            if (!shownActions.stream().anyMatch(obj -> obj[0] == a)) {
                 JPanel actionPanel = new JPanel();
+                actionPanel.setBackground(Color.BLACK);
                 JLabel nameLabel = new JLabel("Fund: " + f.getName());
-                JLabel valueLabel = new JLabel("Value: " + a.getValue());
-                JLabel dateLabel = new JLabel("Date: " + a.getTime());
+                nameLabel.setForeground(f.getColor());
+                JLabel valueLabel = new JLabel("Value: " + df.format(a.getValue()));
+                valueLabel.setForeground(Color.GREEN.darker());
+                JLabel shareLabel = new JLabel("Shares: " + df.format(a.getShare()));
+                shareLabel.setForeground(Color.BLUE.darker());
+                JLabel dateLabel = new JLabel("Date: " + a.getBoughtTime());
+                dateLabel.setForeground(Color.RED.darker());
                 JButton sellButton = new JButton("Sell");
                 sellButton.addActionListener((ActionEvent e) -> {
                     p.sellAction(a);
@@ -129,12 +163,43 @@ public class InvestorPanel extends JPanel {
                 });
                 actionPanel.add(nameLabel);
                 actionPanel.add(valueLabel);
+                actionPanel.add(shareLabel);
                 actionPanel.add(dateLabel);
                 actionPanel.add(sellButton);
-                inventoryPanel.add(actionPanel);
+                actionsListPanel.add(actionPanel);
+                shownActions.add(new Object[]{a, valueLabel, shareLabel});
+            } else {
+                // Update existing action display
+                shownActions.stream()
+                    .filter(obj -> obj[0] == a)
+                    .forEach(obj -> {
+                        JLabel valueLabel = (JLabel) obj[1];
+                        valueLabel.setText("Value: " + df.format(a.getValue()));
+                        JLabel shareLabel = (JLabel) obj[2];
+                        shareLabel.setText("Shares: " + df.format(a.getShare()));
+                    });
+                System.out.println("Updated action display for fund: " + f.getName() + ", value: " + a.getValue());
             }
         }
-        inventoryPanel.repaint();
+        // Remove sold actions from display
+        shownActions.removeIf(obj -> {
+            Action a = (Action) obj[0];
+            if (!p.getActions().containsValue(a)) {
+                // Find and remove the corresponding panel
+                for (int i = 0; i < actionsListPanel.getComponentCount(); i++) {
+                    JPanel actionPanel = (JPanel) actionsListPanel.getComponent(i);
+                    JLabel nameLabel = (JLabel) actionPanel.getComponent(0);
+                    if (nameLabel.getText().equals("Fund: " + a.getFund().getName())) {
+                        actionsListPanel.remove(actionPanel);
+                        break;
+                    }
+                }
+                return true;
+            }
+            return false;
+        });
+        actionsListPanel.revalidate();
+        actionsListPanel.repaint();
         repaint();
     }
 }

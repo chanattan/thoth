@@ -1,16 +1,15 @@
 package thoth.logic;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
 public class Player {
     private double capital;
-    private HashMap<Fund, ArrayList<Action>> actions;
+    private HashMap<Fund, Action> actions;
 
     public Player(double capital) {
         this.capital = capital;
-        this.actions = new HashMap<Fund, ArrayList<Action>>();
+        this.actions = new HashMap<Fund, Action>();
     }
 
     public Player() {
@@ -27,19 +26,28 @@ public class Player {
         If the player has enough capital, the action is bought and stored among the actions the player has.
         The value of an action can change over time.
     */
-    public void invest(Action a) throws InsufficientCapital {
-        if (a.getValue() > this.capital)
-            throw new InsufficientCapital(a);
-        this.capital -= a.getValue();
-        this.actions.computeIfAbsent(a.getFund(), k -> new ArrayList<Action>()).add(a);
+    public void invest(int boughtTime, double boughtValue, Fund f) throws InsufficientCapital {
+        if (this.capital <= 0)
+            throw new InsufficientCapital(boughtValue, f);
+        this.capital -= boughtValue;
+        Action existingAction = this.actions.get(f);
+        if (existingAction != null) {
+            existingAction.updateShare(boughtValue);
+        } else {
+            this.actions.put(f, new Action(boughtTime, boughtValue, f));
+        }
     }
 
     public void sellAction(Action a) {
-        // TODO.
-        // updateCapital();
+        if (!this.actions.containsValue(a)) {
+            return;
+        }
+        double actionValue = a.getValue();
+        this.capital += actionValue;
+        this.actions.remove(a.getFund());
     }
 
-    public HashMap<Fund, ArrayList<Action>> getActions() {
+    public HashMap<Fund, Action> getActions() {
         return this.actions;
     }
 
@@ -48,9 +56,9 @@ public class Player {
         private String fundName;
         private double value;
 
-        public InsufficientCapital(Action a) {
-            this.fundName = a.getFund().getName();
-            this.value = a.getValue();
+        public InsufficientCapital(double value, Fund f) {
+            this.fundName = f.getName();
+            this.value = value;
         }
 
         @Override

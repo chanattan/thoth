@@ -81,11 +81,12 @@ public class Curve {
     /**
      * Returns a sub-array of the current values, considering the offset for the beginning.
      * I.e., the interval [offset, lastValue].
+     * If the offset = this.values.size() -1, the last value only is returned.
      */
     public int[] getLastValues(int offset) {
         int[] lastValues = new int[this.values.size() - offset];
-        for (int i = 0; i < this.values.size() - offset; i++) {
-            lastValues[i] = this.values.get(i);
+        for (int i = offset; i < this.values.size(); i++) {
+            lastValues[i - offset] = this.values.get(i);
         }
         return lastValues;
     }

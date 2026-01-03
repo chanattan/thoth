@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class Fund {
     private final String fundName;
     private final Curve curve;
+    private java.awt.Color color;
 
     public Fund(String fundName, Curve curve) {
         this.fundName = fundName;
@@ -43,5 +44,15 @@ public class Fund {
             fundsArry.add(funds[i]);
         }
         return fundsArry; 
+    }
+
+    // Drawing
+
+    public void setColor(java.awt.Color c) {
+        this.color = c;
+    }
+
+    public java.awt.Color getColor() {
+        return this.color;
     }
 }

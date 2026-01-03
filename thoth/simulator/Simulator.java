@@ -86,12 +86,12 @@ public class Simulator extends JPanel {
 					click = null;
 					for (Object[] o : points) {
 						Point2D.Double p = (Point2D.Double) o[0];
-						Action a = (Action) o[1];
+						Fund f = (Fund) o[1];
 						double dist = worldPt.distance(p);
 						if (dist < threshold) {
 							click = p;
-							System.out.println("Considering " + a.getValue() + " in Fund " + a.getFund().getName());
-							selectedFund = a.getFund();
+							System.out.println("Considering Fund " + f.getName());
+							selectedFund = f;
 							break;
 						}
 					}
@@ -138,54 +138,58 @@ public class Simulator extends JPanel {
         addMouseMotionListener(ma);
 
 		// Global timer
-		this.time = new Timer(1000, updateFunds());
+		this.time = new Timer(1000, updateGlobal());
 		this.time.start();
 	}
 
 	/**
 	 * Global timer update method.
 	 */
-	private ActionListener updateFunds() {
+	private ActionListener updateGlobal() {
 		return new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-						// Temps global.
-						currentTimeStep += 1;
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						updateFunds();
+						thoth.window.investorPanel.updateInventoryPanel();
+					}
+				};
+	}
+	private void updateFunds() {
+		// Temps global.
+		currentTimeStep += 1;
 
-						// Génération des nouvelles valeurs.
-						for (Fund f : funds) {
-							// Mettre à jour news
-							thoth.seekNews(f.getName());
-							// Mettre à jour valeurs
-							Curve c = f.getCurve();
-							float effect = thoth.useEffect(f.getName()); // TODO: the effect is permanent. make it on a period, for now only once.
-							int nextVal = (int) c.nextValue(effect);
-							c.storeValue(nextVal);
-							repaint();
+		// Génération des nouvelles valeurs.
+		for (Fund f : funds) {
+			// Mettre à jour news
+			thoth.seekNews(f.getName());
+			// Mettre à jour valeurs
+			Curve c = f.getCurve();
+			float effect = thoth.useEffect(f.getName()); // TODO: the effect is permanent. make it on a period, for now only once.
+			int nextVal = (int) c.nextValue(effect);
+			c.storeValue(nextVal);
+			repaint();
 
-							// Plus-value des actions pour l'utilisateur : màj.
-							// TODO.
-						}
+			// Plus-value des actions pour l'utilisateur : màj.
+			// TODO.
+		}
 
-						// Màj panel
-						thoth.window.investorPanel.updatePanel(thoth);
+		// Màj panel
+		thoth.window.investorPanel.updatePanel(thoth);
 
-						// Mettre à jour les points pour clicks
-						int offset = 20;
-						int yoffset = -160;
-						for (Fund f : funds) {
-							Curve curve = f.getCurve();
-							int[] values = curve.getLastValues(0);
-							for (int i = 0; i < curve.getSteps(); i++) {
-								int x1 = (i+1) * offset;
-								int val = (int) values[i];
-								int y1 = val + yoffset;
-								Point2D.Double point = new Point2D.Double(x1, -y1);
-								points.add(new Object[] {point, new Action(i, -val, f)});
-							}
-						}
-                    }
-                };
+		// Mettre à jour les points pour clicks
+		int offset = 20;
+		int yoffset = -160;
+		for (Fund f : funds) {
+			Curve curve = f.getCurve();
+			int[] values = curve.getLastValues(0);
+			for (int i = 0; i < curve.getSteps(); i++) {
+				int x1 = (i+1) * offset;
+				int val = (int) values[i];
+				int y1 = val + yoffset;
+				Point2D.Double point = new Point2D.Double(x1, -y1);
+				points.add(new Object[] {point, f});
+			}
+		}
 	}
 
 	public int getTime() {
@@ -425,7 +429,11 @@ public class Simulator extends JPanel {
 			Fund f = this.funds.get(i);
 			String fundName = f.getName();
 
-			Color c = Simulator.colorFromIndex(i + 10);
+			Color c = f.getColor();
+			if (c == null) {
+				c = Simulator.colorFromIndex(i + 10);
+				f.setColor(c);
+			}
 			g.setColor(c);
 			g.drawString(fundName, 20, 50 + yOffset * i);
 		}
