@@ -1,9 +1,14 @@
 package thoth.logic;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import thoth.simulator.Thoth;
@@ -96,36 +101,143 @@ public class AI {
         return (float)(lastValues[lastValues.length - 1] - lastValues[0]) / lastValues[0]; // Percentage increase
     }
 
+    public void update() {
+        // Future implementation: update AI state if needed.
+        // Including autopop.
+    }
+
     public Popup popInfo(JComponent component, int x, int y) {
         JLabel fundLabel = null;
         JLabel noFundLabel = null;
         Prediction prediction = predictNextMove();
         if (prediction.fund != null) {
             String fundName = prediction.fund.getName();
-            fundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:orange'>> Best Fund to Invest:</p> <b align='center'>" + fundName + "</b><br>" +
+            fundLabel = new JLabel("<html><p style='color:orange'>> Best Fund to Invest: <b align='center'>" + fundName + "</b></p><br>" +
                 " | Expected Increase: " + prediction.getExpectedReturn() + "<br>" +
                 " | Confidence Level: " + prediction.getConfidenceLevel() + "<br>" +
                 " <br> " +
                 " Note: This prediction is based on the last five months of the fund's performance.<br>" +
-                " <i>(Click anywhere to close this popup)</i></html>");
-            //popup.add(fundLabel);
+                " <h6>(Click anywhere in this popup to close)</h6></html>");
+            fundLabel.setForeground(Color.LIGHT_GRAY);
         } else {
-            noFundLabel = new JLabel("<html><h4 align='center'>Thoth</h4><p style='color:red'>> No clear best fund to invest.</p><br>" +
+            noFundLabel = new JLabel("<html><p style='color:red'>> No clear best fund to invest.</p><br>" +
                 " | Confidence Level: 0<br>"
                 + "<br>Note: Thoth is unable to determine with decent confidence which<br>fund is best to invest in at this time.<br>" +
-                "<i>(Click anywhere to close this popup)</i></html>");
-            //popup.add(noFundLabel);
+                "<h6>(Click anywhere in this popup to close)</h6></html>");
+            noFundLabel.setForeground(Color.LIGHT_GRAY);
         }
 
-        Popup popup = PopupFactory.getSharedInstance().getPopup(component, fundLabel != null ? fundLabel : noFundLabel, x, y);
-        
-        // show popup at mouse position
-        component.addMouseListener(new MouseAdapter() {
+        JLabel closeButton = new JLabel("✕");
+        closeButton.setFocusable(false);
+        closeButton.setForeground(Color.GRAY);
+    
+        JPanel panel = new JPanel();
+        panel.setBackground(new Color(30, 30, 30));
+        panel.setLayout(new java.awt.BorderLayout());
+
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new java.awt.BorderLayout());
+        topPanel.setBackground(new Color(30, 30, 30));
+        JLabel titleLabel = new JLabel("<html><h3 align='center'>Thoth AI</h3></html>");
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 7, 0, 0));
+        titleLabel.setForeground(Color.ORANGE);
+        JLabel logo = new JLabel(new javax.swing.ImageIcon(
+            getClass().getResource("../../assets/thoth_ico.png")
+        ));
+        topPanel.add(titleLabel, java.awt.BorderLayout.CENTER);
+        topPanel.add(logo, java.awt.BorderLayout.WEST);
+        topPanel.add(closeButton, java.awt.BorderLayout.EAST);
+        panel.add(topPanel, java.awt.BorderLayout.NORTH);
+
+        JSeparator separator = new JSeparator();
+        separator.setForeground(Color.GRAY);
+        panel.add(separator, BorderLayout.CENTER);
+
+        if (fundLabel != null) {
+            panel.add(fundLabel, java.awt.BorderLayout.SOUTH);
+        } else {
+            panel.add(noFundLabel, java.awt.BorderLayout.SOUTH);
+        }
+
+        JPanel content = new JPanel();
+        content.setBackground(new Color(30, 30, 30));
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        content.add(panel);
+
+        // Helpful
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING, 4, 0));
+        buttonPanel.setBackground(new Color(30, 30, 30));
+
+        JLabel helpfulLabel = new JLabel("<html><h5>Was this helpful?</h5></html>");
+        helpfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 3));
+        helpfulLabel.setForeground(Color.LIGHT_GRAY);
+        buttonPanel.add(helpfulLabel);
+
+        JLabel slash = new JLabel(" / ");
+        slash.setForeground(Color.LIGHT_GRAY);
+
+        JLabel noButton = new JLabel("No");
+        noButton.setFocusable(false);
+        noButton.setForeground(Color.LIGHT_GRAY);
+        noButton.setFont(noButton.getFont().deriveFont(12f));
+
+        JLabel yesButton = new JLabel("Yes");
+        yesButton.setFocusable(false);
+        yesButton.setForeground(Color.LIGHT_GRAY);
+        // set font to 12pt
+        yesButton.setFont(yesButton.getFont().deriveFont(12f));
+        yesButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                popup.show();
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                System.out.println("User found the AI prediction helpful.");
+                yesButton.setText("You confirmed this was helpful.");
+                noButton.setText("");
+                slash.setText("");
+                helpfulLabel.setText("");
             }
         });
+        buttonPanel.add(yesButton);
+
+        buttonPanel.add(slash);
+
+        noButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                System.out.println("User did not find the AI prediction helpful.");
+                noButton.setText("You indicated this was not helpful.");
+                yesButton.setText("");
+                slash.setText("");
+                helpfulLabel.setText("");
+            }
+        });
+        buttonPanel.add(noButton);
+        
+        content.add(buttonPanel);
+
+        JPanel borderPanel = new JPanel();
+        borderPanel.setBackground(new Color(30, 30, 30));
+        borderPanel.setBorder(javax.swing.BorderFactory.createLineBorder(Color.DARK_GRAY, 1));
+        borderPanel.setLayout(new BorderLayout());
+        borderPanel.add(content, BorderLayout.CENTER);
+
+        Popup popup = PopupFactory.getSharedInstance().getPopup(component, borderPanel, x, y);
+
+        closeButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                popup.hide();
+            }
+        });
+
+         borderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                popup.hide();
+            }
+        });
+
         return popup;
     }
 }
