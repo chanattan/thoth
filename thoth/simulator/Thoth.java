@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.swing.*;
+import thoth.logic.AI;
 import thoth.logic.Fund;
 import thoth.logic.Player;
 
@@ -14,6 +15,7 @@ public class Thoth {
     public Player player;
     public Random r;
     public Window window;
+    public AI AI;
 
     public Thoth() {
         // Initializes simulation.
@@ -22,6 +24,7 @@ public class Thoth {
         this.player = new Player();
         this.r = new Random();
         this.window = null;
+        this.AI = new AI(this);
     }
 
     // Returns the effect for a given news.

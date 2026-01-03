@@ -25,6 +25,7 @@ import java.awt.FontMetrics;
 import java.util.List;
 
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.Timer;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
@@ -48,6 +49,7 @@ public class Simulator extends JPanel {
     private double offsetY = 0;
     private double scale = 1.0;
     private Point lastDragPoint = null;
+	private JPopupMenu popup = null; // helper AI
 
 	// Investing
 	public Fund selectedFund = null;
@@ -73,6 +75,11 @@ public class Simulator extends JPanel {
 					return;
 				}
 
+				if (popup != null) {
+					popup.setVisible(false);
+					popup = null;
+				}
+
 				try {
 					AffineTransform completeTransform = new AffineTransform();
 					completeTransform.translate(offsetX, offsetY);
@@ -91,6 +98,9 @@ public class Simulator extends JPanel {
 						if (dist < threshold) {
 							click = p;
 							System.out.println("Considering Fund " + f.getName());
+							if (popup == null) {
+								popup = thoth.AI.popInfo(Simulator.this, e.getX(), e.getY());
+							}
 							selectedFund = f;
 							break;
 						}
