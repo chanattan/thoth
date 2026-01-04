@@ -150,7 +150,7 @@ public class InvestorPanel extends JPanel {
                 actionPanel.setBackground(Color.BLACK);
                 JLabel nameLabel = new JLabel("Fund: " + f.getName());
                 nameLabel.setForeground(f.getColor());
-                JLabel valueLabel = new JLabel("Value: " + df.format(a.getValue()));
+                JLabel valueLabel = new JLabel("Value: " + df.format(a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 1)[0] / a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 2)[0]) + "%");
                 valueLabel.setForeground(Color.GREEN.darker());
                 JLabel shareLabel = new JLabel("Shares: " + df.format(a.getShare()));
                 shareLabel.setForeground(Color.BLUE.darker());
@@ -174,7 +174,7 @@ public class InvestorPanel extends JPanel {
                     .filter(obj -> obj[0] == a)
                     .forEach(obj -> {
                         JLabel valueLabel = (JLabel) obj[1];
-                        valueLabel.setText("Value: " + df.format(a.getValue()));
+                        valueLabel.setText("Value: " + df.format(a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 1)[0] / a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 2)[0]) + "%");
                         JLabel shareLabel = (JLabel) obj[2];
                         shareLabel.setText("Shares: " + df.format(a.getShare()));
                     });

@@ -64,7 +64,7 @@ public class Simulator extends JPanel {
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
-		// Timer for global animation that updates every 16ms (~60 FPS)
+		// Timer for global animation that updates every 16ms.
         new Timer(16, e -> {
             boolean repaint = update();
 			if (repaint) {
@@ -175,7 +175,7 @@ public class Simulator extends JPanel {
         addMouseMotionListener(ma);
 
 		// Global timer
-		this.time = new Timer(1000, updateGlobal());
+		this.time = new Timer(3000, updateGlobal());
 		this.time.start();
 	}
 
@@ -255,7 +255,7 @@ public class Simulator extends JPanel {
 		i = (i + 1) % 4;
 		thoth.logic.AI.Prediction prediction = thoth.AI.predictNextMove();
 		if (prediction.fund == null) {
-			thothText = thothPondering.substring(0, thothPondering.length() - i);
+			thothText = thothPondering.substring(0, thothPondering.length() + i - 3);
 			return true;
 		} else {
 			String fundName = prediction.fund.getName();
