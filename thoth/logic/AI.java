@@ -15,7 +15,7 @@ import thoth.simulator.Thoth;
 
 public class AI {
 
-    protected class Prediction {
+    public class Prediction {
         public Fund fund;
         public float confidence;
         
@@ -112,17 +112,18 @@ public class AI {
         Prediction prediction = predictNextMove();
         if (prediction.fund != null) {
             String fundName = prediction.fund.getName();
+            int expectedIncrease = (int)(prediction.getExpectedReturn() * 100);
             fundLabel = new JLabel("<html><p style='color:orange'>> Best Fund to Invest: <b align='center'>" + fundName + "</b></p><br>" +
-                " | Expected Increase: " + prediction.getExpectedReturn() + "<br>" +
-                " | Confidence Level: " + prediction.getConfidenceLevel() + "<br>" +
+                " | Expected Increase: <b style='color:#11ffff'>" + expectedIncrease + "%</b><br>" +
+                " | Confidence Level: <b style='color:" + (prediction.getConfidenceLevel() == 3 ? "green" : prediction.getConfidenceLevel() == 2 ? "orange" : "red") + "'>" + prediction.getConfidenceLevel() + "</b><br>" +
                 " <br> " +
-                " Note: This prediction is based on the last five months of the fund's performance.<br>" +
+                " <h5>Note: This prediction is based on the last five months of the fund's performance.</h5><br>" +
                 " <h6>(Click anywhere in this popup to close)</h6></html>");
             fundLabel.setForeground(Color.LIGHT_GRAY);
         } else {
             noFundLabel = new JLabel("<html><p style='color:red'>> No clear best fund to invest.</p><br>" +
-                " | Confidence Level: 0<br>"
-                + "<br>Note: Thoth is unable to determine with decent confidence which<br>fund is best to invest in at this time.<br>" +
+                " | Confidence Level: <b style='color:red'>0</b><br>"
+                + "<br><h5>Note: Thoth is unable to determine with decent confidence which<br>fund is best to invest in at this time.</h5><br>" +
                 "<h6>(Click anywhere in this popup to close)</h6></html>");
             noFundLabel.setForeground(Color.LIGHT_GRAY);
         }
@@ -192,7 +193,7 @@ public class AI {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 System.out.println("User found the AI prediction helpful.");
-                yesButton.setText("You confirmed this was helpful.");
+                yesButton.setText("<html><h5>You confirmed this was helpful.</h5></html>");
                 noButton.setText("");
                 slash.setText("");
                 helpfulLabel.setText("");
@@ -206,7 +207,7 @@ public class AI {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 System.out.println("User did not find the AI prediction helpful.");
-                noButton.setText("You indicated this was not helpful.");
+                noButton.setText("<html><h5>You indicated this was not helpful.</h5></html>");
                 yesButton.setText("");
                 slash.setText("");
                 helpfulLabel.setText("");

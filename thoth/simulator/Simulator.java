@@ -59,6 +59,7 @@ public class Simulator extends JPanel {
 
 	// Display
 	private Rectangle thothButton;
+	private String thothText = "Thoth AI at your service.";
 	
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
@@ -71,9 +72,25 @@ public class Simulator extends JPanel {
 			}
         }).start();
 
+		new Timer(1000, e -> {
+			boolean repaint = updateThothText();
+			if (repaint)
+				repaint();
+		}).start();
+
 		this.funds = thoth.funds;
 
 		MouseAdapter ma = new MouseAdapter() {
+			
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                Point mousePos = e.getPoint();
+				if (mousePos != null && thothButton.contains(mousePos)) {
+					setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.CROSSHAIR_CURSOR));
+				} else {
+					setCursor(java.awt.Cursor.getDefaultCursor());
+				}
+            }
 
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -229,6 +246,27 @@ public class Simulator extends JPanel {
         hue += 0.005f;
         if (hue > 1f) hue -= 1f;  // wrap around after full cycle
 		return true;
+	}
+
+	private String thothPondering = "Thoth is pondering: estimating the best investment options...";
+	private int i = 0;
+	private boolean updateThothText() {
+		// Update Thoth text for the bottom bar.
+		i = (i + 1) % 4;
+		thoth.logic.AI.Prediction prediction = thoth.AI.predictNextMove();
+		if (prediction.fund == null) {
+			thothText = thothPondering.substring(0, thothPondering.length() - i);
+			return true;
+		} else {
+			String fundName = prediction.fund.getName();
+			int expectedIncrease = (int)(prediction.getExpectedReturn() * 100);
+			thothText = String.format("Thoth suggests investing in %s | Expected Increase: %d%% | Confidence Level: %s",
+				fundName,
+				expectedIncrease,
+				prediction.getConfidenceLevel() == 3 ? "High" : prediction.getConfidenceLevel() == 2 ? "Medium" : "Low"
+			);
+			return true;
+		}
 	}
 
 	/*
@@ -416,11 +454,18 @@ public class Simulator extends JPanel {
 		// Information
 		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
 
-		thothButton = new Rectangle(10, getHeight() - 30, 100, 20);
-		g.setColor(Color.DARK_GRAY);
+		thothButton = new Rectangle(10, getHeight() - 55, 100, 20);
+		g.setColor(new Color(0.1f, 0.1f, 0.1f, 0.7f));
 		g.fill(thothButton);
 		g.setColor(Color.ORANGE);
-		g.drawString("Thoth, guide me.", 12, getHeight() - 16);
+		g.drawString("Thoth, guide me.", 12, getHeight() - 40);
+
+		// Thoth bar
+		g.setColor(Window.THEME_COLOR);
+		g.fillRect(0, this.getHeight() - 26, this.getWidth(), 26);
+
+		g.setColor(Color.LIGHT_GRAY);
+		g.drawString(thothText, 10, this.getHeight() - 10);
 	}
 
 	public static Color colorFromIndex(int index) {
