@@ -27,7 +27,7 @@ public class Player {
         The value of an action can change over time.
     */
     public void invest(int boughtTime, double boughtValue, Fund f) throws InsufficientCapital {
-        if (this.capital <= 0)
+        if (this.capital - boughtValue < 0)
             throw new InsufficientCapital(boughtValue, f);
         this.capital -= boughtValue;
         Action existingAction = this.actions.get(f);
