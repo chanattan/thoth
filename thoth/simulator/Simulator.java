@@ -184,11 +184,11 @@ public class Simulator extends JPanel {
 	 */
 	private ActionListener updateGlobal() {
 		return (ActionEvent e) -> {
-                    updateFunds();
+                    updateSimulator();
                     thoth.window.investorPanel.updateInventoryPanel();
                 };
 	}
-	private void updateFunds() {
+	private void updateSimulator() {
 		// Temps global.
 		currentTimeStep += 1;
 
@@ -201,14 +201,14 @@ public class Simulator extends JPanel {
 			float effect = thoth.useEffect(f.getName()); // TODO: the effect is permanent. make it on a period, for now only once.
 			int nextVal = (int) c.nextValue(effect);
 			c.storeValue(nextVal);
-			repaint();
 
 			// Plus-value des actions pour l'utilisateur : màj.
 			// TODO.
 		}
 
-		// Màj panel
+		// Màj panels
 		thoth.window.investorPanel.updatePanel(thoth);
+		thoth.window.newsPanel.updatePanel();
 
 		// Mettre à jour les points pour clicks
 		int offset = 20;
@@ -216,9 +216,9 @@ public class Simulator extends JPanel {
 		for (Fund f : funds) {
 			Curve curve = f.getCurve();
 			int[] values = curve.getLastValues(0);
-			for (int i = 0; i < curve.getSteps(); i++) {
-				int x1 = (i+1) * offset;
-				int val = (int) values[i];
+			for (int l = 0; l < curve.getSteps(); l++) {
+				int x1 = (l+1) * offset;
+				int val = (int) values[l];
 				int y1 = val + yoffset;
 				Point2D.Double point = new Point2D.Double(x1, -y1);
 				points.add(new Object[] {point, f});
@@ -324,9 +324,6 @@ public class Simulator extends JPanel {
 
 		this.drawMeta(g);
 
-		// ========== News
-		this.drawNews(g);
-
 		// ========== Header
         this.setOptions(g);
 		g.setTransform(lastTransform);
@@ -382,63 +379,6 @@ public class Simulator extends JPanel {
         g2.draw(new Line2D.Double(0.5, 0.5, 0.5, h - 0.5));
 	}
 
-	// TODO: move into another panel.
-	private void drawNews(Graphics2D g) {
-		int offset = 20;
-		int x1 = getWidth() - 400;
-		// 7 news
-		List<News> pool = this.thoth.news.subList(Math.max(0, this.thoth.news.size() - 8), this.thoth.news.size());
-		for (int i = 0; i < pool.size() - 1; i++) {
-			News n = pool.get(i);
-			g.setColor(Color.WHITE);
-			int x = x1 + offset;
-			int y = 30 + (i + 1) * 20; // espacement vertical
-
-			FontMetrics fm = g.getFontMetrics();
-			String txt = n.getTitle() + " (" + n.getEffect() + "%)";
-			int textWidth = fm.stringWidth(txt);
-			int textHeight = fm.getHeight();
-
-			// fond blanc derrière le texte
-			g.setColor(Color.WHITE);
-			g.fillRect(x, y - fm.getAscent(), Math.max(textWidth + 6, 350), textHeight);
-
-			// bordure du fond (optionnel)
-			g.setColor(Color.LIGHT_GRAY);
-			g.drawRect(x, y - fm.getAscent(), Math.max(textWidth + 6, 350), textHeight);
-
-			// texte
-			Color c = (n.getEffect() > 0) ? Color.GREEN : Color.RED;
-			this.drawColoredParenthesesText(g, txt, x + 3, y, c);
-		}
-	}
-
-	private void drawColoredParenthesesText(Graphics2D g2, String text, int x, int y, Color parenColor) {
-		FontMetrics fm = g2.getFontMetrics();
-		boolean insideParen = false;
-
-		for (int i = 0; i < text.length(); i++) {
-			char c = text.charAt(i);
-
-			// switch color based on whether we're inside parentheses
-			if (c == '(') {
-				insideParen = true;
-				g2.setColor(parenColor);
-			} else if (c == ')') {
-				g2.setColor(parenColor);
-				insideParen = false; // will revert on next char
-			} else if (!insideParen) {
-				g2.setColor(Color.DARK_GRAY);
-			}
-
-			// draw the character
-			g2.drawString(String.valueOf(c), x, y);
-
-			// advance x
-			x += fm.charWidth(c);
-		}
-	}
-
 	private void drawHeader(Graphics2D g) {
 		// Bar
 		g.setColor(Window.THEME_COLOR);
@@ -491,19 +431,19 @@ public class Simulator extends JPanel {
 		// Information relative to the n displayed funds
 		int maxDisplayedFunds = 8;
 		int yOffset = 30;
-		for (int i = 0; i < this.funds.size(); i++) {
-			if (i >= maxDisplayedFunds - 1)
+		for (int l = 0; l < this.funds.size(); l++) {
+			if (l >= maxDisplayedFunds - 1)
 				break;
-			Fund f = this.funds.get(i);
+			Fund f = this.funds.get(l);
 			String fundName = f.getName();
 
 			Color c = f.getColor();
 			if (c == null) {
-				c = Simulator.colorFromIndex(i + 10);
+				c = Simulator.colorFromIndex(l + 10);
 				f.setColor(c);
 			}
 			g.setColor(c);
-			g.drawString(fundName, 20, 50 + yOffset * i);
+			g.drawString(fundName, 20, 50 + yOffset * l);
 		}
 	}
 

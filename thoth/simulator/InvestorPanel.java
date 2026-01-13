@@ -2,6 +2,7 @@ package thoth.simulator;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import thoth.logic.Action;
 import thoth.logic.Fund;
 import thoth.logic.Player;
@@ -37,11 +39,10 @@ public class InvestorPanel extends JPanel {
     private double capital;
     private long elapsedTime;
     private JTextField investmentField;
-    private final JButton investButton;
+    private JButton investButton;
     private JPanel inventoryPanel;
     private ArrayList<Object[]> shownActions;
     private JLabel capitalLabel;
-    private final JLabel timeLabel;
     private JPanel actionsListPanel;
 
     private static final DecimalFormat df = new DecimalFormat("0.00");
@@ -50,29 +51,7 @@ public class InvestorPanel extends JPanel {
         this.thoth = thoth;
         capital = 0;
         elapsedTime = 0;
-        investmentField = new JTextField(10);
-        investmentField.addActionListener((ActionEvent e) -> {
-			// The value should be bound to the max capital of the user, upon typing.
-			double val = Double.parseDouble(investmentField.getText());
-			if (val > thoth.player.getCapital()) {
-				investmentField.setText("" + thoth.player.getCapital());
-			}
-        });
-        investButton = new JButton("Invest");
-        investButton.addActionListener((ActionEvent e) -> {
-            Fund selectedFund = thoth.window.getSimulator().selectedFund;
-				if (selectedFund != null) {
-					try {
-						thoth.player.invest(thoth.window.getSimulator().getTime(), Double.parseDouble(investmentField.getText()), selectedFund);
-						capitalLabel.setText("Capital: " + thoth.player.getCapital());
-                        updateInventoryPanel();
-					} catch (Player.InsufficientCapital ex) {
-						System.out.println(ex.getMessage());
-					}
-				}
-        });
 
-		timeLabel = new JLabel("Month: 0");
         shownActions = new ArrayList<Object[]>();
         actionsListPanel = new JPanel();
         actionsListPanel.setLayout(
@@ -86,8 +65,7 @@ public class InvestorPanel extends JPanel {
         // Update capital, elapsed time, and inventory display
         capital = thoth.player.getCapital();
         elapsedTime = thoth.window.getSimulator().getTime();
-        capitalLabel.setText("Capital: " + capital);
-        timeLabel.setText("Month: " + elapsedTime);
+        capitalLabel.setText("$" + df.format(capital));
     }
 
     private void setupPanel() {
@@ -96,26 +74,68 @@ public class InvestorPanel extends JPanel {
         inventoryPanel = createInventoryPanel();
         add(inventoryPanel, BorderLayout.CENTER);
         add(createInvestmentPanel(), BorderLayout.SOUTH);
-        add(createTimePanel(), BorderLayout.EAST);
+        setBackground(Window.THEME_COLOR);
     }
 
     private JPanel createCapitalPanel() {
         JPanel panel = new JPanel();
-        capitalLabel = new JLabel("Capital: " + capital);
+        capitalLabel = new JLabel("$" + df.format(capital));
+        capitalLabel.setOpaque(false);
+        capitalLabel.setForeground(Color.BLACK);
+        capitalLabel.setFont(Thoth.customFont.deriveFont(java.awt.Font.BOLD, 24f));
+        capitalLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        capitalLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 20, 2, 20));
+        panel.setBackground(Color.YELLOW);
         panel.add(capitalLabel);
         return panel;
     }
 
     private JPanel createInvestmentPanel() {
         JPanel panel = new JPanel();
+
+        investmentField = new JTextField(10);
+        investmentField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!((c >= '0') && (c <= '9') || (c == java.awt.event.KeyEvent.VK_BACK_SPACE) || (c == java.awt.event.KeyEvent.VK_DELETE) || (c == '.'))) {
+                    evt.consume();
+                }
+            }
+        });
+        investmentField.setOpaque(false);
+        investmentField.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+        investmentField.setBackground(new Color(0, 0, 0, 0));
+        investmentField.setCaretColor(Color.BLACK);
+        investmentField.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 20f));
+        investmentField.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+
+        investButton = new JButton("Invest");
+        investButton.setFont(Thoth.customFont.deriveFont(Font.BOLD, 20f));
+        investButton.setOpaque(true);
+        investButton.setBackground(Color.ORANGE);
+        investButton.setBorder(null);
+        investButton.addActionListener((ActionEvent e) -> {
+            Fund selectedFund = thoth.window.getSimulator().selectedFund;
+            double val = Double.parseDouble(investmentField.getText());
+            double c = thoth.player.getCapital();
+            if (selectedFund != null) {
+                try {
+                    thoth.player.invest(thoth.window.getSimulator().getTime(), val, selectedFund);
+                    capitalLabel.setText("$" + df.format(c) + " - $" + df.format(val) + " [" + selectedFund.getName() + "]");
+                    updateInventoryPanel();
+                } catch (Player.InsufficientCapital ex) {
+                    capitalLabel.setText("Insufficient capital!!");
+                }
+            }
+            
+            if (val > thoth.player.getCapital()) {
+                investmentField.setText("" + thoth.player.getCapital());
+            }
+        });
         panel.add(investmentField);
         panel.add(investButton);
-        return panel;
-    }
-
-    private JPanel createTimePanel() {
-        JPanel panel = new JPanel();
-        panel.add(timeLabel);
+        panel.setBackground(Color.ORANGE);
         return panel;
     }
 

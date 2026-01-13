@@ -1,5 +1,7 @@
 package thoth.simulator;
 
+import java.awt.Font;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -16,6 +18,8 @@ public class Thoth {
     public Random r;
     public Window window;
     public AI AI;
+    public static Font customFont;
+    public static final int NB_NEWS_MAX = 5;
 
     public Thoth() {
         // Initializes simulation.
@@ -25,6 +29,7 @@ public class Thoth {
         this.r = new Random();
         this.window = null;
         this.AI = new AI(this);
+        customFont = loadFont(14f);
     }
 
     // Returns the effect for a given news.
@@ -41,11 +46,26 @@ public class Thoth {
 
     // Updates news
     public void seekNews(String fundName) {
-        if (r.nextFloat() < .01) { // 1% chance of having a new given any fund name.
+        if (r.nextFloat() < .1) { // 1% chance of having a new given any fund name.
             News n = News.yieldNew(fundName);
             if (n != null) {
+                if (this.news.size() >= NB_NEWS_MAX) {
+                    this.news.remove(0);
+                }
                 this.news.add(n);
             }
+        }
+    }
+
+    private Font loadFont(float size) {
+        try (InputStream is = Thoth.class.getResourceAsStream("../../assets/Grenze-SemiBold.ttf")) {
+
+            Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
+            return baseFont.deriveFont(size);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new Font("SansSerif", Font.PLAIN, (int) size);
         }
     }
 
