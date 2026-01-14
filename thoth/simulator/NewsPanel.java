@@ -84,13 +84,12 @@ public class NewsPanel extends JPanel {
         g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 20f));
         g.drawString(header, x, y);
 
-        // Month converted to date starting from year 2054
-        int month = thoth.window.getSimulator().getTime();
-        int year = 2054 + (month / 12);
-        int displayMonth = (month % 12) + 1;
+        Object[] dateInfo = thoth.getDate();
+        String month = (String) dateInfo[0];
+        int year = (int) dateInfo[1];
 
         // Background rectangle for date
-        String dateStr = "Date: " + String.format("%02d", displayMonth) + "/" + year;
+        String dateStr = "Date: " + month + "/" + year;
         g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 16f));
         FontMetrics dateFm = g.getFontMetrics();
         int datePadding = 6;
@@ -162,12 +161,12 @@ public class NewsPanel extends JPanel {
                 g.drawString(effectText, x + 3 + nameWidth + titleWidth, y + (fm.getDescent() / 2));
             } else {
                 Color c = (n.getEffect() > 0) ? Color.GREEN : Color.RED;
-                this.drawColoredParenthesesText(g, txt, x + 3, y + (fm.getDescent() / 2), c);
+                NewsPanel.drawColoredParenthesesText(g, txt, x + 3, y + (fm.getDescent() / 2), c);
             }
         }
 	}
 
-    private void drawColoredParenthesesText(Graphics2D g2, String text, int x, int y, Color parenColor) {
+    public static void drawColoredParenthesesText(Graphics2D g2, String text, int x, int y, Color parenColor) {
 		FontMetrics fm = g2.getFontMetrics();
 		boolean insideParen = false;
 

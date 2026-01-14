@@ -1,7 +1,9 @@
 package thoth.simulator;
 
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -24,16 +26,21 @@ import java.awt.geom.Point2D;
 import java.awt.FontMetrics;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.List;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.Popup;
 import javax.swing.Timer;
+import javax.swing.border.Border;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
 import thoth.logic.Action;
 import thoth.logic.Player;
+import thoth.ui.HaloLabel;
 
 @SuppressWarnings("serial")
 public class Simulator extends JPanel {
@@ -51,15 +58,31 @@ public class Simulator extends JPanel {
     private double offsetX = 0;
     private double offsetY = 0;
     private double scale = 1.0;
+	// smooth dragging
+	private double targetOffsetX = 0;
+	private double targetOffsetY = 0;
+
+	// Lerp factor
+	private static final double LERP = 0.25;
+	private double zoomAnchorX = 0; // world coordinates under cursor
+	private double zoomAnchorY = 0;
+	private boolean zooming = false;
+	private double targetScale = 1.0; // zoom
+	private double velocityScale = 0.0;
+	private static final double SMOOTHNESS = 0.25;
+
+	// clamp zoom limits
+	private static final double MIN_SCALE = 0.1;
+	private static final double MAX_SCALE = 10.0;
+
     private Point lastDragPoint = null;
-	private Popup popup = null; // helper AI
+	public Popup popup = null; // helper AI
 
 	// Investing
 	public Fund selectedFund = null;
 
 	// Display
-	private Rectangle thothButton;
-	private String thothText = "Thoth AI at your service.";
+	public HaloLabel thothButton;
 	
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
@@ -72,40 +95,12 @@ public class Simulator extends JPanel {
 			}
         }).start();
 
-		new Timer(1000, e -> {
-			boolean repaint = updateThothText();
-			if (repaint)
-				repaint();
-		}).start();
-
 		this.funds = thoth.funds;
 
 		MouseAdapter ma = new MouseAdapter() {
-			
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                Point mousePos = e.getPoint();
-				if (mousePos != null && thothButton.contains(mousePos)) {
-					setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.CROSSHAIR_CURSOR));
-				} else {
-					setCursor(java.awt.Cursor.getDefaultCursor());
-				}
-            }
 
             @Override
             public void mouseClicked(MouseEvent e) {
-				// AI popup
-				Point mousePos = e.getPoint();
-				if (mousePos != null && thothButton.contains(mousePos)) {
-					if (popup != null) {
-						popup.hide();
-						popup = null;
-					} else {
-						popup = thoth.AI.popInfo(Simulator.this, mousePos.x, mousePos.y);
-						popup.show();
-					}
-				}
-
                 if (currTransform == null) {
 					return;
 				}
@@ -146,13 +141,14 @@ public class Simulator extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (lastDragPoint != null) {
-                    int dx = e.getX() - lastDragPoint.x;
-                    int dy = e.getY() - lastDragPoint.y;
-                    offsetX += dx;
-                    offsetY += dy;
-                    lastDragPoint = e.getPoint();
-                    repaint();
-                }
+					int dx = e.getX() - lastDragPoint.x;
+					int dy = e.getY() - lastDragPoint.y;
+
+					targetOffsetX += dx;
+					targetOffsetY += dy;
+
+					lastDragPoint = e.getPoint();
+				}
             }
 
             @Override
@@ -162,21 +158,86 @@ public class Simulator extends JPanel {
 
 			@Override
             public void mouseWheelMoved(MouseWheelEvent e) {
-                double zoomFactor = 1.1;
-                int notches = e.getWheelRotation();
-                if (notches < 0)
-                    scale *= zoomFactor;
-                else
-                    scale /= zoomFactor;
-                repaint();
+				double rotation = e.getPreciseWheelRotation();
+
+				Point p = e.getPoint();
+
+				double mouseWorldX = (p.x - offsetX) / scale;
+				double mouseWorldY = (p.y - offsetY) / scale;
+
+				zoomAnchorX = mouseWorldX;
+				zoomAnchorY = mouseWorldY;
+				zooming = true;
+
+				double zoomFactor = 0.015;
+				velocityScale += -rotation * zoomFactor;
+
+				targetScale = scale * (1.0 + velocityScale);
+				targetScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
+
+				targetOffsetX = p.x - mouseWorldX * targetScale;
+				targetOffsetY = p.y - mouseWorldY * targetScale;
             }
         };
         addMouseListener(ma);
         addMouseMotionListener(ma);
+		addMouseWheelListener(ma);
+
+		setFocusable(true);
+		requestFocusInWindow();
+
+		setLayout(new BorderLayout());
+		// Thoth button
+		createThothButton();
 
 		// Global timer
 		this.time = new Timer(3000, updateGlobal());
 		this.time.start();
+	}
+
+	public final void createThothButton() {
+		javax.swing.ImageIcon originalIcon = new javax.swing.ImageIcon(
+			getClass().getResource("../../assets/thoth.png")
+		);
+		java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(originalIcon.getIconWidth() / 9, 
+		originalIcon.getIconHeight() / 9, java.awt.Image.SCALE_SMOOTH);
+
+		thothButton = new HaloLabel(new ImageIcon(scaledImage), 0.2f, 10f, new Color(100, 149, 237, 30), -10);
+		thothButton.setToolTipText("Click to get Thoth AI predictions.");
+
+		JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		bottomBar.setOpaque(false);
+		bottomBar.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 20, 0));
+		bottomBar.add(thothButton);
+		add(bottomBar, BorderLayout.SOUTH);
+
+		thothButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.CROSSHAIR_CURSOR));
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				setCursor(java.awt.Cursor.getDefaultCursor());
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				// AI popup
+				Point mousePos = e.getPoint();
+				if (mousePos != null) {
+					if (popup != null) {
+						popup.hide();
+						popup = null;
+					} else {
+						popup = thoth.AI.popInfo(Simulator.this, mousePos.x, mousePos.y);
+						thothButton.toggleAnimation(false);
+						popup.show();
+					}
+				}
+			}
+		});
 	}
 
 	/**
@@ -209,6 +270,7 @@ public class Simulator extends JPanel {
 		// Màj panels
 		thoth.window.investorPanel.updatePanel(thoth);
 		thoth.window.newsPanel.updatePanel();
+		thoth.window.fundsPanel.updatePanel();
 
 		// Mettre à jour les points pour clicks
 		int offset = 20;
@@ -241,32 +303,32 @@ public class Simulator extends JPanel {
 	private float hue = 0;
 	private boolean update() {
 		dx += 10;
-		if (dx > this.getWidth())
-			dx = 0;
-        hue += 0.005f;
-        if (hue > 1f) hue -= 1f;  // wrap around after full cycle
-		return true;
-	}
+		if (dx > this.getWidth()) dx = 0;
 
-	private String thothPondering = "Thoth is pondering: estimating the best investment options...";
-	private int i = 0;
-	private boolean updateThothText() {
-		// Update Thoth text for the bottom bar.
-		i = (i + 1) % 4;
-		thoth.logic.AI.Prediction prediction = thoth.AI.predictNextMove();
-		if (prediction.fund == null) {
-			thothText = thothPondering.substring(0, thothPondering.length() + i - 3);
-			return true;
+		hue += 0.005f;
+		if (hue > 1f) hue -= 1f;
+
+		// Smooth lerp for offsets
+		offsetX += (targetOffsetX - offsetX) * LERP;
+		offsetY += (targetOffsetY - offsetY) * LERP;
+
+		// Smooth scale
+		if (zooming && Math.abs(velocityScale) > 0.00001) {
+			double newScale = scale * (1.0 + velocityScale);
+			newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+			// Adjust target offsets so zoomAnchor stays under cursor
+			targetOffsetX = targetOffsetX + (zoomAnchorX * (scale - newScale));
+			targetOffsetY = targetOffsetY + (zoomAnchorY * (scale - newScale));
+
+			scale = newScale;
+
+			// Decay velocity for smooth stop
+			velocityScale *= (1.0 - SMOOTHNESS);
 		} else {
-			String fundName = prediction.fund.getName();
-			int expectedIncrease = (int)(prediction.getExpectedReturn() * 100);
-			thothText = String.format("Thoth suggests investing in %s | Expected Increase: %d%% | Confidence Level: %s",
-				fundName,
-				expectedIncrease,
-				prediction.getConfidenceLevel() == 3 ? "High" : prediction.getConfidenceLevel() == 2 ? "Medium" : "Low"
-			);
-			return true;
+			zooming = false;
 		}
+		return true;
 	}
 
 	/*
@@ -321,8 +383,6 @@ public class Simulator extends JPanel {
 		g.translate(-100, -500);
 
 		g.setTransform(lastTransform);
-
-		this.drawMeta(g);
 
 		// ========== Header
         this.setOptions(g);
@@ -380,32 +440,20 @@ public class Simulator extends JPanel {
 	}
 
 	private void drawHeader(Graphics2D g) {
-		// Bar
-		g.setColor(Window.THEME_COLOR);
-		g.fillRect(0, 0, this.getWidth(), 26);
-
 		// Animation line
         Color color = Color.getHSBColor(hue, 1.0f, 1.0f);
 		g.setColor(color);
 		int lineWidth = 100;
-		g.drawLine(dx, 26, Math.min(lineWidth + dx, this.getWidth()), 26);
+		g.drawLine(dx, this.getHeight() - 26, Math.min(lineWidth + dx, this.getWidth()), this.getHeight() - 26);
 		g.setColor(Color.LIGHT_GRAY);
-
-		// Information
-		g.drawString("Thoth AI does not predict the future and can make mistakes. Check here for more info or the [?] button below.", 10, 18);
-
-		thothButton = new Rectangle(10, getHeight() - 55, 100, 20);
-		g.setColor(new Color(0.1f, 0.1f, 0.1f, 0.7f));
-		g.fill(thothButton);
-		g.setColor(Color.ORANGE);
-		g.drawString("Thoth, guide me.", 12, getHeight() - 40);
 
 		// Thoth bar
 		g.setColor(Window.THEME_COLOR);
 		g.fillRect(0, this.getHeight() - 26, this.getWidth(), 26);
 
+		// Information
 		g.setColor(Color.LIGHT_GRAY);
-		g.drawString(thothText, 10, this.getHeight() - 10);
+		g.drawString("Thoth AI does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
 	}
 
 	public static Color colorFromIndex(int index) {
@@ -417,35 +465,6 @@ public class Simulator extends JPanel {
 
         return Color.getHSBColor(hue, saturation, brightness);
     }
-
-	private void drawMeta(Graphics2D g) {
-		/*
-			Draw meta information on the left.
-		*/
-
-		// Bar
-		g.setColor(Color.BLACK);
-		g.fillRect(0, 26, 120, this.getHeight());
-		g.setFont(new Font("Monospaced", Font.PLAIN, 13)); 
-
-		// Information relative to the n displayed funds
-		int maxDisplayedFunds = 8;
-		int yOffset = 30;
-		for (int l = 0; l < this.funds.size(); l++) {
-			if (l >= maxDisplayedFunds - 1)
-				break;
-			Fund f = this.funds.get(l);
-			String fundName = f.getName();
-
-			Color c = f.getColor();
-			if (c == null) {
-				c = Simulator.colorFromIndex(l + 10);
-				f.setColor(c);
-			}
-			g.setColor(c);
-			g.drawString(fundName, 20, 50 + yOffset * l);
-		}
-	}
 
 	private void drawMainFrame(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.

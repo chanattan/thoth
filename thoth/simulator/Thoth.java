@@ -1,6 +1,7 @@
 package thoth.simulator;
 
 import java.awt.Font;
+import thoth.ui.SplashIntro;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,12 +70,35 @@ public class Thoth {
         }
     }
 
+    // Month converted to date starting from year 2054
+    public Object[] getDate() {
+        int month = this.window.getSimulator().getTime();
+        int year = 2054 + (month / 12);
+        int displayMonth = (month % 12) + 1;
+        return new Object[]{String.format("%02d", displayMonth), year};
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            Thoth thoth = new Thoth();
-            Window w = new Window(thoth);
-            thoth.window = w;
-            w.getSimulator().fillData(thoth.funds);
+        boolean splash = false;
+        if (!splash) {
+            SwingUtilities.invokeLater(() -> {
+                Thoth thoth = new Thoth();
+                Window w = new Window(thoth);
+                thoth.window = w;
+                w.setLocationRelativeTo(null);
+                w.getSimulator().fillData(thoth.funds);
+            });
+            return;
+        }
+        SplashIntro.showSplash(() -> {
+            // launch main simulator frame after fade out
+            SwingUtilities.invokeLater(() -> {
+                Thoth thoth = new Thoth();
+                Window w = new Window(thoth);
+                thoth.window = w;
+                w.setLocationRelativeTo(null);
+                w.getSimulator().fillData(thoth.funds);
+            });
         });
     }
 }

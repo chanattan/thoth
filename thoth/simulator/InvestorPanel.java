@@ -103,7 +103,9 @@ public class InvestorPanel extends JPanel {
                 }
             }
         });
+        
         investmentField.setOpaque(false);
+        investmentField.setText("0");
         investmentField.setBorder(javax.swing.BorderFactory.createEmptyBorder());
         investmentField.setBackground(new Color(0, 0, 0, 0));
         investmentField.setCaretColor(Color.BLACK);
@@ -117,6 +119,9 @@ public class InvestorPanel extends JPanel {
         investButton.setBorder(null);
         investButton.addActionListener((ActionEvent e) -> {
             Fund selectedFund = thoth.window.getSimulator().selectedFund;
+            if (investmentField.getText().isEmpty()) {
+                investmentField.setText("0");
+            }
             double val = Double.parseDouble(investmentField.getText());
             double c = thoth.player.getCapital();
             if (selectedFund != null) {
@@ -130,7 +135,19 @@ public class InvestorPanel extends JPanel {
             }
             
             if (val > thoth.player.getCapital()) {
-                investmentField.setText("" + thoth.player.getCapital());
+                investmentField.setText("" + df.format(thoth.player.getCapital()));
+            }
+        });
+        investButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                // animation
+                investButton.setFont(Thoth.customFont.deriveFont(Font.BOLD, 22f));
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                investButton.setFont(Thoth.customFont.deriveFont(Font.BOLD, 20f));
             }
         });
         panel.add(investmentField);
@@ -170,7 +187,7 @@ public class InvestorPanel extends JPanel {
                 actionPanel.setBackground(Color.BLACK);
                 JLabel nameLabel = new JLabel("Fund: " + f.getName());
                 nameLabel.setForeground(f.getColor());
-                JLabel valueLabel = new JLabel("Value: " + df.format(a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 1)[0] / a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 2)[0]) + "%");
+                JLabel valueLabel = new JLabel("Value: " + df.format(a.getFund().getValueChangePercent()) + "%");
                 valueLabel.setForeground(Color.GREEN.darker());
                 JLabel shareLabel = new JLabel("Shares: " + df.format(a.getShare()));
                 shareLabel.setForeground(Color.BLUE.darker());

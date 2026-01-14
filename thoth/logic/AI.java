@@ -2,15 +2,13 @@ package thoth.logic;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.FlowLayout;
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
+import thoth.simulator.Simulator;
 import thoth.simulator.Thoth;
 
 public class AI {
@@ -109,82 +107,70 @@ public class AI {
     public Popup popInfo(JComponent component, int x, int y) {
         JLabel fundLabel = null;
         JLabel noFundLabel = null;
+        Color BG_COLOR = new Color(30, 30, 30);
         Prediction prediction = predictNextMove();
         if (prediction.fund != null) {
             String fundName = prediction.fund.getName();
             int expectedIncrease = (int)(prediction.getExpectedReturn() * 100);
-            fundLabel = new JLabel("<html><p style='color:orange'>> Best Fund to Invest: <b align='center'>" + fundName + "</b></p><br>" +
-                " | Expected Increase: <b style='color:#11ffff'>" + expectedIncrease + "%</b><br>" +
-                " | Confidence Level: <b style='color:" + (prediction.getConfidenceLevel() == 3 ? "green" : prediction.getConfidenceLevel() == 2 ? "orange" : "red") + "'>" + prediction.getConfidenceLevel() + "</b><br>" +
-                " <br> " +
-                " <h5>Note: This prediction is based on the last five months of the fund's performance.</h5><br>" +
-                " <h6>(Click anywhere in this popup to close)</h6></html>");
+            fundLabel = new JLabel("<html><p style='color:orange'>> Best Fund to Invest: <b>" + fundName + "</b></p>" +
+                " | Expected Increase: <b style='color:#11ffff'>" + expectedIncrease + "%</b>" +
+                " | Confidence Level: <b style='color:" + (prediction.getConfidenceLevel() == 3 ? "green" : prediction.getConfidenceLevel() == 2 ? "orange" : "red") + "'>" + prediction.getConfidenceLevel() + "</b>" +
+                "<br>| Note: This prediction is based on the last five months of the fund's performance.<br>" +
+                " <span style='color:gray'>(Click anywhere in this popup to close)</span></html>");
             fundLabel.setForeground(Color.LIGHT_GRAY);
         } else {
-            noFundLabel = new JLabel("<html><p style='color:red'>> No clear best fund to invest.</p><br>" +
-                " | Confidence Level: <b style='color:red'>0</b><br>"
-                + "<br><h5>Note: Thoth is unable to determine with decent confidence which<br>fund is best to invest in at this time.</h5><br>" +
-                "<h6>(Click anywhere in this popup to close)</h6></html>");
+            noFundLabel = new JLabel("<html><p style='color:red'>> No clear best fund to invest.</p>" +
+                " | Confidence Level: <b style='color:red'>0</b>" +
+                " | Note: Thoth is unable to determine with decent confidence<br>which fund is best to invest in at this time.<br>" +
+                " <span style='color:gray'>(Click anywhere in this popup to close)</span></html>");
             noFundLabel.setForeground(Color.LIGHT_GRAY);
         }
 
         JLabel closeButton = new JLabel("✕");
         closeButton.setFocusable(false);
         closeButton.setForeground(Color.GRAY);
-    
+
+        // Create horizontal layout panel
         JPanel panel = new JPanel();
-        panel.setBackground(new Color(30, 30, 30));
+        panel.setBackground(BG_COLOR);
         panel.setLayout(new java.awt.BorderLayout());
 
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new java.awt.BorderLayout());
-        topPanel.setBackground(new Color(30, 30, 30));
-        JLabel titleLabel = new JLabel("<html><h3 align='center'>Thoth AI</h3></html>");
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 7, 0, 0));
+        // Left side logo and title
+        JPanel leftPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 5));
+        leftPanel.setBackground(BG_COLOR);
+        Object[] dateInfo = thoth.getDate();
+        String month = (String) dateInfo[0];
+        int year = (int) dateInfo[1];
+        JLabel titleLabel = new JLabel("<html><h3>Thoth AI</h3>[" + month + "/" + year + "]</html>");
         titleLabel.setForeground(Color.ORANGE);
         JLabel logo = new JLabel(new javax.swing.ImageIcon(
             getClass().getResource("../../assets/thoth_ico.png")
         ));
-        topPanel.add(titleLabel, java.awt.BorderLayout.CENTER);
-        topPanel.add(logo, java.awt.BorderLayout.WEST);
-        topPanel.add(closeButton, java.awt.BorderLayout.EAST);
-        panel.add(topPanel, java.awt.BorderLayout.NORTH);
+        leftPanel.add(logo);
+        leftPanel.add(titleLabel);
 
-        JSeparator separator = new JSeparator();
-        separator.setForeground(Color.GRAY);
-        panel.add(separator, BorderLayout.CENTER);
-
+        // main content in center
+        JPanel centerPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 5));
+        centerPanel.setBackground(BG_COLOR);
         if (fundLabel != null) {
-            panel.add(fundLabel, java.awt.BorderLayout.SOUTH);
+            centerPanel.add(fundLabel);
         } else {
-            panel.add(noFundLabel, java.awt.BorderLayout.SOUTH);
+            centerPanel.add(noFundLabel);
         }
 
-        JPanel content = new JPanel();
-        content.setBackground(new Color(30, 30, 30));
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        content.add(panel);
+        // Right side with question helpful feedback and close button
+        JPanel rightPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 5));
+        rightPanel.setBackground(BG_COLOR);
 
-        // Helpful
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING, 4, 0));
-        buttonPanel.setBackground(new Color(30, 30, 30));
-
-        JLabel helpfulLabel = new JLabel("<html><h5>Was this helpful?</h5></html>");
-        helpfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 3));
+        JLabel helpfulLabel = new JLabel("<html><h5>Helpful?</h5></html>");
         helpfulLabel.setForeground(Color.LIGHT_GRAY);
-        buttonPanel.add(helpfulLabel);
+        rightPanel.add(helpfulLabel);
 
         JLabel slash = new JLabel(" / ");
         slash.setForeground(Color.LIGHT_GRAY);
 
-        JLabel noButton = new JLabel("No");
-        noButton.setFocusable(false);
-        noButton.setForeground(Color.LIGHT_GRAY);
-        noButton.setFont(noButton.getFont().deriveFont(12f));
-
         JLabel yesButton = new JLabel("Yes");
+        JLabel noButton = new JLabel("No");
         yesButton.setFocusable(false);
         yesButton.setForeground(Color.LIGHT_GRAY);
         // set font to 12pt
@@ -199,10 +185,10 @@ public class AI {
                 helpfulLabel.setText("");
             }
         });
-        buttonPanel.add(yesButton);
 
-        buttonPanel.add(slash);
-
+        noButton.setFocusable(false);
+        noButton.setForeground(Color.LIGHT_GRAY);
+        noButton.setFont(noButton.getFont().deriveFont(12f));
         noButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
@@ -213,28 +199,56 @@ public class AI {
                 helpfulLabel.setText("");
             }
         });
-        buttonPanel.add(noButton);
-        
-        content.add(buttonPanel);
+
+        rightPanel.add(yesButton);
+        rightPanel.add(slash);
+        rightPanel.add(noButton);
+        rightPanel.add(new JLabel("  "));
+        rightPanel.add(closeButton);
+
+        panel.add(leftPanel, java.awt.BorderLayout.WEST);
+        panel.add(centerPanel, java.awt.BorderLayout.CENTER);
+        panel.add(rightPanel, java.awt.BorderLayout.EAST);
+
+        JPanel content = new JPanel();
+        content.setBackground(new Color(0, 0, 0, 0));
+        content.setLayout(new BorderLayout());
+        content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        content.add(panel, BorderLayout.CENTER);
 
         JPanel borderPanel = new JPanel();
-        borderPanel.setBackground(new Color(30, 30, 30));
-        borderPanel.setBorder(javax.swing.BorderFactory.createLineBorder(Color.DARK_GRAY, 1));
+        borderPanel.setBackground(BG_COLOR);
+        borderPanel.setBorder(javax.swing.BorderFactory.createLineBorder(Color.ORANGE, 1));
         borderPanel.setLayout(new BorderLayout());
         borderPanel.add(content, BorderLayout.CENTER);
 
-        Popup popup = PopupFactory.getSharedInstance().getPopup(component, borderPanel, x, y);
+        // bottom of simulator panel, spanning its width
+        int simulatorWidth = thoth.window.getSimulator().getWidth();
+        int simulatorHeight = thoth.window.getSimulator().getHeight();
+        java.awt.Point simulatorLocation = thoth.window.getSimulator().getLocationOnScreen();
+        
+        int popupX = simulatorLocation.x + 10;
+        int popupY = simulatorLocation.y + simulatorHeight - 125;
+        int popupWidth = simulatorWidth - 20;
+        
+        borderPanel.setPreferredSize(new java.awt.Dimension(popupWidth, 90));
+
+        Popup popup = PopupFactory.getSharedInstance().getPopup(component, borderPanel, popupX, popupY);
 
         closeButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
+                ((Simulator) component).popup = null;
+                ((Simulator) component).thothButton.toggleAnimation(true);
                 popup.hide();
             }
         });
 
-         borderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+        borderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
+                ((Simulator) component).popup = null;
+                ((Simulator) component).thothButton.toggleAnimation(true);
                 popup.hide();
             }
         });

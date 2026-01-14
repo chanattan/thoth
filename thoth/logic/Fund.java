@@ -20,6 +20,10 @@ public class Fund {
         return this.curve;
     }
 
+    public float getValueChangePercent() {
+        return this.curve.getValueChangePercent();
+    }
+
     static final Fund[] funds = {
         new Fund("BNP Paribas", Curve.generateCurve()),
         new Fund("Netflix", Curve.generateCurve()),
