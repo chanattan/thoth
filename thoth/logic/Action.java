@@ -25,6 +25,12 @@ public class Action {
         return this.share;
     }
 
+    public double getPlusValue() {
+        double lastValue = this.fund.getCurve().getLastValues(this.fund.getCurve().getSteps() - 1)[0];
+        double curveValueAtPurchase = this.fund.getCurve().getLastValues(this.time)[0];
+        return (double) Math.round(lastValue / curveValueAtPurchase);
+    }
+
     /**
      * Current value of the action.
      */
