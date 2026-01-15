@@ -43,7 +43,7 @@ public class Curve {
         this.prev_fbm = 0f;
 
         this.values = new ArrayList<Integer>();
-        this.values.add((int)this.rng.nextFloat(0f, 200f));
+        this.values.add((int)this.rng.nextFloat(100f, 200f));
         this.prev_value = this.values.get(0);
 
         for (int i = 0; i < 10; ++i) {

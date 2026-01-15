@@ -1,7 +1,6 @@
 package thoth.simulator;
 
 import java.awt.Font;
-import thoth.ui.SplashIntro;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,7 @@ import javax.swing.*;
 import thoth.logic.AI;
 import thoth.logic.Fund;
 import thoth.logic.Player;
+import thoth.ui.SplashIntro;
 
 public class Thoth {
 

@@ -4,13 +4,14 @@ import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,29 +19,17 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList;
-
 import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
-import java.awt.FontMetrics;
-import java.awt.Rectangle;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.util.List;
+import java.util.ArrayList;
 import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.Popup;
 import javax.swing.Timer;
-import javax.swing.border.Border;
 import thoth.logic.AI.Prediction;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
-import thoth.logic.Action;
-import thoth.logic.Player;
 import thoth.ui.HaloLabel;
 
 @SuppressWarnings("serial")
@@ -53,7 +42,8 @@ public class Simulator extends JPanel {
 	private AffineTransform currTransform = null;
 	private Point2D worldPt;
 	private final Timer time;
-	private int currentTimeStep = 0; // mois
+	private int currentTimeStep = 10; // mois
+	private Popup tipPopup = null;
 
 	// Mouse dragging
     private double offsetX = 0;
@@ -102,6 +92,11 @@ public class Simulator extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
+				if (tipPopup != null) {
+					tipPopup.hide();
+					tipPopup = null;
+				}
+				
                 if (currTransform == null) {
 					return;
 				}
@@ -110,12 +105,12 @@ public class Simulator extends JPanel {
 					AffineTransform completeTransform = new AffineTransform();
 					completeTransform.translate(offsetX, offsetY);
 					completeTransform.scale(scale, scale);
-					completeTransform.translate(100, 500);
+					completeTransform.translate(40, getHeight());
 					
 					AffineTransform screenToWorld = completeTransform.createInverse();
 					worldPt = screenToWorld.transform(e.getPoint(), null);
 
-					double threshold = 10 / scale; 
+					double threshold = 15 / scale; 
 					click = null;
 					for (Object[] o : points) {
 						Point2D.Double p = (Point2D.Double) o[0];
@@ -124,7 +119,22 @@ public class Simulator extends JPanel {
 						if (dist < threshold) {
 							click = p;
 							System.out.println("Considering Fund " + f.getName());
-							selectedFund = f;
+							// Popup for info fund
+							// Retrieve time step
+							int timeStep = (int) (p.x / 20) - 1; // since x = (i+1)*20
+							String tooltipText = "<html><b>" + f.getName() + "</b><br>" +
+								"Current Value: " + f.getCurve().getLastValues(timeStep)[0] + "<br>" +
+								"Click for more details</html>";
+
+							javax.swing.JToolTip tooltip = createToolTip();
+							tooltip.setTipText(tooltipText);
+							tooltip.setBackground(new Color(50, 50, 50, 230));
+							tooltip.setForeground(Color.WHITE);
+							tooltip.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY));
+
+							javax.swing.PopupFactory factory = javax.swing.PopupFactory.getSharedInstance();
+							tipPopup = factory.getPopup(Simulator.this, tooltip, e.getXOnScreen() + 10, e.getYOnScreen() - 30);
+							tipPopup.show();
 							break;
 						}
 					}
@@ -274,8 +284,9 @@ public class Simulator extends JPanel {
 		thoth.window.fundsPanel.updatePanel();
 
 		// Mettre à jour les points pour clicks
+		points.clear(); // juste ajouter les derniers...
 		int offset = 20;
-		int yoffset = -160;
+		int yoffset = 0;
 		for (Fund f : funds) {
 			Curve curve = f.getCurve();
 			int[] values = curve.getLastValues(0);
@@ -309,10 +320,10 @@ public class Simulator extends JPanel {
 			//popup.hide();
 			//popup = null;
 			thothButton.toggleAnimation(false);
-			System.out.println("no Prediction");
+			//System.out.println("no Prediction");
 			repaint();
 		} else if (nextPrediction.fund != null) {
-			System.out.println("new Prediction");
+			//System.out.println("new Prediction");
 			thothButton.toggleAnimation(true);
 			repaint();
 		}
@@ -388,14 +399,14 @@ public class Simulator extends JPanel {
 
 		// ========== Grid
 		// It should be y-invert to be cleaner.
-		g.translate(120, -30);
+		g.translate(0, -getHeight()*3);
 		this.drawGrid(g);
-		g.translate(-120, 30);
+		g.translate(0, getHeight()*3);
 
 		// ========== Main Frame (curves)
-		g.translate(100, 500);
+		g.translate(40, getHeight());
 		this.drawMainFrame(g);
-		g.translate(-100, -500);
+		g.translate(-40, -getHeight());
 
 		g.setTransform(lastTransform);
 
@@ -412,47 +423,109 @@ public class Simulator extends JPanel {
 		this.drawHeader(g);
 	}
 
-	private void drawGrid(Graphics2D g2) {
-		int w = getWidth() * 4;
-        int h = getHeight() * 4;
-		int minorStep = 20;
-		int majorStep = 80;
-		Color minorColor = new Color(255, 255, 255, 20);
-        Color majorColor = new Color(255, 255, 255, 45);
-		g2.setStroke(new BasicStroke(1f));
-        g2.setColor(minorColor);
-        // Alignement à 0.5 pour des lignes nettes 1px
-        for (int x = 0; x <= w; x += minorStep) {
-            double xx = x + 0.5;
-            g2.draw(new Line2D.Double(xx, 0, xx, h));
-        }
-        for (int y = 0; y <= h; y += minorStep) {
-            double yy = y + 0.5;
-            g2.draw(new Line2D.Double(0, yy, w, yy));
-        }
+private void drawGrid(Graphics2D g2) {
+    int w = getWidth() * 10;
+    int h = getHeight() * 4;
+    int minorStep = 20;
+    int majorStep = 80;
+    Color minorColor = new Color(255, 255, 255, 20);
+    Color majorColor = new Color(255, 255, 255, 45);
+    
+    g2.setStroke(new BasicStroke(1f));
+    g2.setColor(minorColor);
+    
+    // Lignes verticales mineures
+    for (int x = 0; x <= w; x += minorStep) {
+        double xx = x + 0.5;
+        g2.draw(new Line2D.Double(xx, 0, xx, h));
+    }
+    
+    // Lignes horizontales mineures
+    for (int y = 0; y <= h; y += minorStep) {
+        double yy = y + 0.5;
+        g2.draw(new Line2D.Double(0, yy, w, yy));
+    }
 
-        // lignes majeures
-        g2.setStroke(new BasicStroke(1f));
-        g2.setColor(majorColor);
-        for (int x = 0; x <= w; x += majorStep) {
-            double xx = x + 0.5;
-            g2.draw(new Line2D.Double(xx, 0, xx, h));
-        }
-        for (int y = 0; y <= h; y += majorStep) {
-            double yy = y + 0.5;
-            g2.draw(new Line2D.Double(0, yy, w, yy));
-        }
+    // Lignes majeures
+    g2.setStroke(new BasicStroke(1f));
+    g2.setColor(majorColor);
+    
+    for (int x = 0; x <= w; x += majorStep) {
+        double xx = x + 0.5;
+        g2.draw(new Line2D.Double(xx, 0, xx, h));
+    }
+    
+    for (int y = 0; y <= h; y += majorStep) {
+        double yy = y + 0.5;
+        g2.draw(new Line2D.Double(0, yy, w, yy));
+    }
 
-		Color axisColor = new Color(255, 255, 255, 160);
+    Color axisColor = new Color(255, 255, 255, 160);
+    Color labelColor = new Color(200, 200, 200, 200);
 
-        // Dessiner axes 
+    // Dessiner les axes principaux
+    g2.setColor(axisColor);
+    g2.setStroke(new BasicStroke(2f));
+    
+    // Axe X (horizontal) - en bas
+    g2.draw(new Line2D.Double(0, h - 0.5, w, h - 0.5));
+    
+    // Axe Y (vertical) - à gauche avec marge pour labels
+    int axisX = 60;
+    g2.draw(new Line2D.Double(axisX + 0.5, 0, axisX + 0.5, h));
+
+    // === GRADUATIONS AXE Y (ordonnées) - Pas de 100 ===
+    g2.setFont(new Font("Monospaced", Font.PLAIN, 10));
+    FontMetrics fm = g2.getFontMetrics();
+    
+    int valueStep = 100;
+    int pixelPerValue = 1;
+    
+    // Graduations y
+    for (int value = 0; value <= 10000; value += valueStep) {
+        // Position Y : en partant du bas (h) et en remontant
+        int yPos = h - (value * pixelPerValue);
+        
+        if (yPos < 0) break;  // Ne pas dessiner hors limites
+        
+        // Petit trait de graduation
         g2.setColor(axisColor);
-        g2.setStroke(new BasicStroke(1.5f));
-        // Axe X en bas
-        g2.draw(new Line2D.Double(0.5, h - 0.5, w - 0.5, h - 0.5));
-        // Axe Y à gauche
-        g2.draw(new Line2D.Double(0.5, 0.5, 0.5, h - 0.5));
-	}
+        g2.drawLine(axisX - 5, yPos, axisX + 5, yPos);
+        
+        // Label
+        g2.setColor(labelColor);
+        String label = String.valueOf(value);
+        int labelWidth = fm.stringWidth(label);
+        g2.drawString(label, axisX - labelWidth - 10, yPos + 4);
+    }
+
+    // GRADUATIONS AXE X (abscisses) - Mois (pas de 1)
+    int monthPixelStep = 20;  // Doit correspondre à xoffset dans drawMainFrame
+    
+    for (int month = 0; month <= 50; month++) {
+        int xPos = axisX + (month * monthPixelStep);
+        
+        if (xPos > w) break;
+        
+        // Petit trait de graduation
+        g2.setColor(axisColor);
+        g2.drawLine(xPos, h - 5, xPos, h + 5);
+        
+        // Label tous les 3 mois pour ne pas surcharger
+        if (month % 3 == 0) {
+            g2.setColor(labelColor);
+            String label = String.valueOf(month % 12 + 1);
+            int labelWidth = fm.stringWidth(label);
+            g2.drawString(label, xPos - labelWidth / 2, h + 18);
+        }
+    }
+    
+    // Labels des axes
+    g2.setColor(labelColor);
+    g2.setFont(new Font("Monospaced", Font.BOLD, 11));
+    g2.drawString("Valeur", 5, 15);
+    g2.drawString("Temps (mois)", w - 120, h - 10);
+}
 
 	private void drawHeader(Graphics2D g) {
 		// Animation line
@@ -485,7 +558,7 @@ public class Simulator extends JPanel {
 		// For each fund, display its associated curve in a different color.
         int colorIndex = 0;
 		int xoffset = 20;
-		int yoffset = -160;
+		int yoffset = 0;
 
 		// Draw worldPt in the correct coordinate space
 		if (click != null) {
@@ -495,10 +568,9 @@ public class Simulator extends JPanel {
 			g.drawOval(x - 8, y - 8, 16, 16);
 			// Draw a vertical line to the time axis
 			Stroke oldStroke = g.getStroke();
-			Stroke dashed = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
-                                  0, new float[]{9}, 0);
+			Stroke dashed = new BasicStroke(0.7f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0);
   			g.setStroke(dashed);
-			g.drawLine(x, y, x, 160);
+			g.drawLine(x, y, x, 0);
 			g.setStroke(oldStroke);
 		}
 
@@ -523,9 +595,9 @@ public class Simulator extends JPanel {
             }
 
 			if (values.length > 0) {
-				int xlast = curve.getSteps() - 1;
+				int xlast = values.length * offset;
 				int ylast = (int) values[values.length - 1] + yoffset;
-				g.fillOval((xlast + 1) * offset - 3, -ylast - 3, 6, -6);
+				g.fillOval(xlast - 3, -ylast - 3, 6, 6);
 			}
 
             colorIndex++;

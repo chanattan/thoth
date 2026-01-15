@@ -6,7 +6,7 @@ import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
 public class Window extends JFrame {
-	private final Simulator sim;
+	public final Simulator sim;
 	public final InvestorPanel investorPanel;
 	public final NewsPanel newsPanel;
 	public final FundsPanel fundsPanel;

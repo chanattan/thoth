@@ -118,7 +118,7 @@ public class NewsPanel extends JPanel {
 			int y = 50 + (i + 1) * 27; // espacement vertical
 
 			FontMetrics fm = g.getFontMetrics();
-			String txt = n.getTitle() + " (" + n.getEffect() + "%)";
+			String txt = n.getTitle() + " (" + n.getInitialEffect() + "%)";
 			int textHeight = fm.getHeight() + 3;
 
 			g.setColor(Color.WHITE);
@@ -143,8 +143,8 @@ public class NewsPanel extends JPanel {
             if (correspondingFund != null) {
                 String fundName = correspondingFund.getName();
                 String newsTitle = n.getTitle();
-                String effectText = " (" + n.getEffect() + "%)";
-                Color effectColor = (n.getEffect() > 0) ? Color.GREEN : Color.RED;
+                String effectText = " (" + n.getInitialEffect() + "%)";
+                Color effectColor = (n.getInitialEffect() > 0) ? Color.GREEN : Color.RED;
 
                 g.setColor(correspondingFund.getColor());
                 g.drawString(fundName + " ", x + 3, y + (fm.getDescent() / 2));
@@ -160,7 +160,7 @@ public class NewsPanel extends JPanel {
                 g.setColor(effectColor);
                 g.drawString(effectText, x + 3 + nameWidth + titleWidth, y + (fm.getDescent() / 2));
             } else {
-                Color c = (n.getEffect() > 0) ? Color.GREEN : Color.RED;
+                Color c = (n.getInitialEffect() > 0) ? Color.GREEN : Color.RED;
                 NewsPanel.drawColoredParenthesesText(g, txt, x + 3, y + (fm.getDescent() / 2), c);
             }
         }

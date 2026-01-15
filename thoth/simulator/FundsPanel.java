@@ -17,16 +17,44 @@ import thoth.logic.Fund;
 public class FundsPanel extends JPanel {
     private Thoth thoth;
     public JSplitPane parentPane;
+    private Fund clickedFund = null;
 
     public FundsPanel(Thoth thoth) {
         this.thoth = thoth;
         this.setLayout(new BorderLayout());
 
         this.setBackground(Color.BLACK);
+        addMouseListener(mouseEvent());
     }
     
     public void updatePanel() {
         repaint();
+    }
+
+    private java.awt.event.MouseAdapter mouseEvent() {
+        return new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                int clickY = e.getY();
+                int maxDisplayedFunds = 8;
+                int yOffset = 30;
+                int globalYOffset = 70;
+                
+                for (int i = 0; i < Math.min(thoth.funds.size(), maxDisplayedFunds - 1); i++) {
+                    int fundY = globalYOffset + yOffset * i;
+                    if (clickY >= fundY - 15 && clickY <= fundY + 15) {
+                        clickedFund = thoth.funds.get(i);
+                        System.out.println("Clicked on fund: " + clickedFund.getName());
+                        break;
+                    }
+                }
+
+                if (clickedFund != null) {
+                    thoth.window.sim.selectedFund = clickedFund;
+                    repaint();
+                }
+            }
+        };
     }
 
     @Override
@@ -37,19 +65,34 @@ public class FundsPanel extends JPanel {
         super.paintComponent(g2);
         Graphics2D g = (Graphics2D) g2;
 
-		// Bar
-		g.setColor(Color.BLACK);
-		g.fillRect(0, 26, 120, this.getHeight());
-		g.setFont(new Font("Monospaced", Font.PLAIN, 13)); 
+		// Horizontal bar
+        String header = "FUNDS";
+        FontMetrics fm = g.getFontMetrics();
+        int x = (this.getWidth() - fm.stringWidth(header)) / 2;
+        int y = 30;
+        // background for title
+        g.setColor(Color.ORANGE);
+        int padding = 10;
+        g.fillRoundRect(x - padding, y - fm.getAscent() - 7, fm.stringWidth(header) + 3 * padding + 5, fm.getHeight() + 10, 15, 15);
 
-		// Information relative to the n displayed funds
+        g.setColor(Color.BLACK);
+        g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 20f));
+        g.drawString(header, x, y);
+
 		int maxDisplayedFunds = 8;
 		int yOffset = 30;
+        int globalYOffset = 70;
 		for (int l = 0; l < thoth.funds.size(); l++) {
 			if (l >= maxDisplayedFunds - 1)
 				break;
 			Fund f = thoth.funds.get(l);
 			String fundName = f.getName();
+
+            // Background for selected fund
+            if (clickedFund == f) {
+                g.setColor(new Color(255, 255, 255, 50));
+                g.fillRoundRect(10, globalYOffset + yOffset * l - 20, this.getWidth() - 20, 25, 10, 10);
+            }
 
 			Color c = f.getColor();
 			if (c == null) {
@@ -57,9 +100,9 @@ public class FundsPanel extends JPanel {
 				f.setColor(c);
 			}
 			g.setColor(c);
-			g.drawString(fundName, 20, 30 + yOffset * l);
+			g.drawString(fundName, 20, globalYOffset + yOffset * l);
             float val = f.getValueChangePercent();
-            NewsPanel.drawColoredParenthesesText(g, String.format("(" + (val >= 0 ? "+" : "") + "%.2f%%)", val), 125, 30 + yOffset * l, c);
+            NewsPanel.drawColoredParenthesesText(g, String.format("(" + (val >= 0 ? "+" : "") + "%.2f%%)", val), 125, globalYOffset + yOffset * l, c);
 		}
 	}
 }

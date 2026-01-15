@@ -28,6 +28,10 @@ public class News {
         return this.description;
     }
 
+    public float getInitialEffect() {
+        return this.effect;
+    }
+
     /// Returns the measurable effect on stocks.
     public float getEffect() {
         if (this.elapsed >= this.persistence) {
