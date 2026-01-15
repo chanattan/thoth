@@ -39,6 +39,7 @@ public class AI {
     public AI(Thoth thoth) {
         this.thoth = thoth;
     }
+
     public Prediction predictNextMove() {
         Fund bestFund = null;
         int bestIncrease = Integer.MIN_VALUE;
@@ -239,7 +240,7 @@ public class AI {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 ((Simulator) component).popup = null;
-                ((Simulator) component).thothButton.toggleAnimation(true);
+                //((Simulator) component).thothButton.toggleAnimation(true);
                 popup.hide();
             }
         });
@@ -248,7 +249,7 @@ public class AI {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 ((Simulator) component).popup = null;
-                ((Simulator) component).thothButton.toggleAnimation(true);
+                //((Simulator) component).thothButton.toggleAnimation(true);
                 popup.hide();
             }
         });

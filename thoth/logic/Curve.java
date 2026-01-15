@@ -40,11 +40,15 @@ public class Curve {
         this.fmb_min_movement = fbm_min_movement;
         this.fbm_max_movement = fbm_max_movement;
 
-        this.prev_value = 0f;
         this.prev_fbm = 0f;
 
         this.values = new ArrayList<Integer>();
-        this.values.add((int)this.rng.nextFloat(0f, 100f));
+        this.values.add((int)this.rng.nextFloat(0f, 200f));
+        this.prev_value = this.values.get(0);
+
+        for (int i = 0; i < 10; ++i) {
+            this.storeValue(this.nextValue(this.rng.nextFloat(-100f, 100f)));
+        }
     }
 
     /**
@@ -59,9 +63,9 @@ public class Curve {
      */
     public static Curve generateCurve() {
         Random r = new Random();
-        float fbm_min_movement = -5;
-        float fbm_max_movement = 20;
-        float chaos_factor = r.nextFloat(0, 1);
+        float fbm_min_movement = -100;
+        float fbm_max_movement = 100;
+        float chaos_factor = r.nextFloat(0.5f, 1f);
 
         return new Curve(fbm_min_movement, fbm_max_movement, chaos_factor);
     }
@@ -86,7 +90,7 @@ public class Curve {
         this.prev_fbm = rng.nextFloat(this.fmb_min_movement, this.fbm_max_movement) + (this.prev_fbm);
         this.prev_value += event_effect;
 
-        return lerp(this.prev_value, this.prev_fbm, chaos_factor);
+        return Math.max(0f, lerp(this.prev_value, this.prev_fbm, chaos_factor));
     }
 
     /**

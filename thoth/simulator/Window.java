@@ -14,7 +14,12 @@ public class Window extends JFrame {
 	public static final Color THEME_COLOR = new Color(43, 42, 42);
 
 	public Window(Thoth thoth) {
-		setSize(new Dimension(1280, 720));
+		// os max screen size
+		setTitle("Thoth Simulator");
+		Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setExtendedState(JFrame.MAXIMIZED_BOTH);
+		setSize(screenSize);
 		getContentPane().setBackground(THEME_COLOR);
 		setBackground(THEME_COLOR);
 		setAlwaysOnTop(true);
