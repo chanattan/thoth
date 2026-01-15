@@ -1,17 +1,12 @@
 	package thoth.simulator;
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.util.List;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
-import javax.swing.JTextArea;
 import thoth.logic.Fund;
 
 public class FundsPanel extends JPanel {
@@ -102,7 +97,7 @@ public class FundsPanel extends JPanel {
 			g.setColor(c);
 			g.drawString(fundName, 20, globalYOffset + yOffset * l);
             float val = f.getValueChangePercent();
-            NewsPanel.drawColoredParenthesesText(g, String.format("(" + (val >= 0 ? "+" : "") + "%.2f%%)", val), 125, globalYOffset + yOffset * l, c);
+            NewsPanel.drawColoredParenthesesText(g, String.format("(" + (val >= 0 ? "+" : "") + "%.2f%%)", val), 125, globalYOffset + yOffset * l, val >= 0 ? Color.GREEN.darker() : Color.RED.darker());
 		}
 	}
 }

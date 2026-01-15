@@ -171,6 +171,7 @@ public class AI {
         slash.setForeground(Color.LIGHT_GRAY);
 
         JLabel yesButton = new JLabel("Yes");
+        JLabel somewhatButton = new JLabel("Somewhat");
         JLabel noButton = new JLabel("No");
         yesButton.setFocusable(false);
         yesButton.setForeground(Color.LIGHT_GRAY);
@@ -201,9 +202,26 @@ public class AI {
             }
         });
 
+        somewhatButton.setFocusable(false);
+        somewhatButton.setForeground(Color.LIGHT_GRAY);
+        somewhatButton.setFont(somewhatButton.getFont().deriveFont(12f));
+        somewhatButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                System.out.println("User found the AI prediction somewhat helpful.");
+                somewhatButton.setText("<html><h5>You indicated this was somewhat helpful.</h5></html>");
+                yesButton.setText("");
+                noButton.setText("");
+                slash.setText("");
+                helpfulLabel.setText("");
+            }
+        });
+
         rightPanel.add(yesButton);
         rightPanel.add(slash);
         rightPanel.add(noButton);
+        rightPanel.add(slash);
+        rightPanel.add(somewhatButton);
         rightPanel.add(new JLabel("  "));
         rightPanel.add(closeButton);
 

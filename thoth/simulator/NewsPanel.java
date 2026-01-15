@@ -144,7 +144,7 @@ public class NewsPanel extends JPanel {
                 String fundName = correspondingFund.getName();
                 String newsTitle = n.getTitle();
                 String effectText = " (" + n.getInitialEffect() + "%)";
-                Color effectColor = (n.getInitialEffect() > 0) ? Color.GREEN : Color.RED;
+                Color effectColor = (n.getInitialEffect() > 0) ? Color.GREEN.darker() : Color.RED.darker();
 
                 g.setColor(correspondingFund.getColor());
                 g.drawString(fundName + " ", x + 3, y + (fm.getDescent() / 2));
@@ -160,7 +160,7 @@ public class NewsPanel extends JPanel {
                 g.setColor(effectColor);
                 g.drawString(effectText, x + 3 + nameWidth + titleWidth, y + (fm.getDescent() / 2));
             } else {
-                Color c = (n.getInitialEffect() > 0) ? Color.GREEN : Color.RED;
+                Color c = (n.getInitialEffect() > 0) ? Color.GREEN.darker() : Color.RED.darker();
                 NewsPanel.drawColoredParenthesesText(g, txt, x + 3, y + (fm.getDescent() / 2), c);
             }
         }

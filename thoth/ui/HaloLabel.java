@@ -86,11 +86,10 @@ public class HaloLabel extends JLabel {
         g2.fillOval(inset + radius, inset + radius, w - (inset + radius) * 2, h - (inset + radius) * 2);
 
         // Inner halo
-        g2.setColor(haloColor);
+        g2.setColor(haloColor.brighter().brighter());
         int innerRadius = Math.max(1, radius / 2);
 
         g2.fillOval(inset + innerRadius, inset + innerRadius, w - (inset + innerRadius) * 2, h - (inset + innerRadius) * 2);
-
 
         g2.dispose();
         super.paintComponent(g);

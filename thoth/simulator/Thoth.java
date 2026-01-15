@@ -1,10 +1,13 @@
 package thoth.simulator;
 
 import java.awt.Font;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import thoth.logic.AI;
 import thoth.logic.Fund;
@@ -78,6 +81,12 @@ public class Thoth {
         return new Object[]{String.format("%02d", displayMonth), year};
     }
 
+    public static Object[] getDateStatic(int month) {
+        int year = 2054 + (month / 12);
+        int displayMonth = (month % 12) + 1;
+        return new Object[]{String.format("%02d", displayMonth), year};
+    }
+
     public static void main(String[] args) {
         boolean splash = false;
         if (!splash) {
@@ -85,6 +94,11 @@ public class Thoth {
                 Thoth thoth = new Thoth();
                 Window w = new Window(thoth);
                 thoth.window = w;
+                try {
+                    w.setIconImage(ImageIO.read(new File("assets/thoth.png")));
+                } catch (IOException ex) {
+                    System.getLogger(Thoth.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
                 w.setLocationRelativeTo(null);
                 w.getSimulator().fillData(thoth.funds);
             });
@@ -96,6 +110,11 @@ public class Thoth {
                 Thoth thoth = new Thoth();
                 Window w = new Window(thoth);
                 thoth.window = w;
+                try {
+                    w.setIconImage(ImageIO.read(new File("assets/thoth.png")));
+                } catch (IOException ex) {
+                    System.getLogger(Thoth.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
                 w.setLocationRelativeTo(null);
                 w.getSimulator().fillData(thoth.funds);
             });

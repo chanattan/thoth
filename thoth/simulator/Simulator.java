@@ -3,6 +3,7 @@ package thoth.simulator;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -11,6 +12,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.event.ActionEvent;
@@ -23,9 +25,17 @@ import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
+import javax.swing.JToolTip;
 import javax.swing.Popup;
+import javax.swing.PopupFactory;
+import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import thoth.logic.AI.Prediction;
 import thoth.logic.Curve;
@@ -54,13 +64,13 @@ public class Simulator extends JPanel {
 	private double targetOffsetY = 0;
 
 	// Lerp factor
-	private static final double LERP = 0.25;
+	private static final double LERP = 0.15;
 	private double zoomAnchorX = 0; // world coordinates under cursor
 	private double zoomAnchorY = 0;
 	private boolean zooming = false;
 	private double targetScale = 1.0; // zoom
 	private double velocityScale = 0.0;
-	private static final double SMOOTHNESS = 0.25;
+	private static final double SMOOTHNESS = 0.5;
 
 	// clamp zoom limits
 	private static final double MIN_SCALE = 0.1;
@@ -68,13 +78,15 @@ public class Simulator extends JPanel {
 
     private Point lastDragPoint = null;
 	public Popup popup = null; // helper AI
+	private Popup disclaimerFrame = null;
 
 	// Investing
 	public Fund selectedFund = null;
 
 	// Display
 	public HaloLabel thothButton;
-	
+	private Rectangle disclaimerButton;
+
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
@@ -92,11 +104,23 @@ public class Simulator extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
+				// disclaimer button
+				Point mousePos = e.getPoint();
+				if (disclaimerButton.contains(mousePos)) {
+					if (disclaimerOverlay != null) {
+						Simulator.this.toggleDisclaimer(false);
+					} else {
+						Simulator.this.toggleDisclaimer(true);
+					}
+				}
+
+				// tip popup
 				if (tipPopup != null) {
 					tipPopup.hide();
 					tipPopup = null;
 				}
 				
+				// curve focus
                 if (currTransform == null) {
 					return;
 				}
@@ -122,11 +146,15 @@ public class Simulator extends JPanel {
 							// Popup for info fund
 							// Retrieve time step
 							int timeStep = (int) (p.x / 20) - 1; // since x = (i+1)*20
-							String tooltipText = "<html><b>" + f.getName() + "</b><br>" +
-								"Current Value: " + f.getCurve().getLastValues(timeStep)[0] + "<br>" +
-								"Click for more details</html>";
+							Object[] dateInfo = Thoth.getDateStatic(timeStep);
+							String month = (String) dateInfo[0];
+							int year = (int) dateInfo[1];
+							String tooltipText = "<html><center><span style='color:black'><b>" + f.getName() + "</b></span><br>" +
+								"<span style='color:gray'>[" + month + "/" + year + "]</center></span><br>" +
+								"Fund Value: " + f.getCurve().getLastValues(timeStep)[0] + "<br>" +
+								"(Click for more details)</html>";
 
-							javax.swing.JToolTip tooltip = createToolTip();
+							JToolTip tooltip = createToolTip();
 							tooltip.setTipText(tooltipText);
 							tooltip.setBackground(new Color(50, 50, 50, 230));
 							tooltip.setForeground(Color.WHITE);
@@ -151,6 +179,11 @@ public class Simulator extends JPanel {
 
             @Override
             public void mouseDragged(MouseEvent e) {
+				if (tipPopup != null) {
+					tipPopup.hide();
+					tipPopup = null;
+				}
+				
                 if (lastDragPoint != null) {
 					int dx = e.getX() - lastDragPoint.x;
 					int dy = e.getY() - lastDragPoint.y;
@@ -203,6 +236,7 @@ public class Simulator extends JPanel {
 
 		// Global timer
 		this.time = new Timer(3000, updateGlobal());
+		this.time.setInitialDelay(0);
 		this.time.start();
 	}
 
@@ -213,7 +247,7 @@ public class Simulator extends JPanel {
 		java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(originalIcon.getIconWidth() / 9, 
 		originalIcon.getIconHeight() / 9, java.awt.Image.SCALE_SMOOTH);
 
-		thothButton = new HaloLabel(new ImageIcon(scaledImage), 0.2f, 10f, new Color(100, 149, 237, 30), -10);
+		thothButton = new HaloLabel(new ImageIcon(scaledImage), 0.2f, 10f, new Color(255, 165, 0, 30), -10);
 		thothButton.setToolTipText("Click to get Thoth AI predictions.");
 
 		JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -249,6 +283,77 @@ public class Simulator extends JPanel {
 				}
 			}
 		});
+	}
+
+	private JPanel disclaimerOverlay;
+	private void toggleDisclaimer(boolean show) {
+		if (!show) {
+			if (disclaimerOverlay != null) {
+				remove(disclaimerOverlay);
+				disclaimerOverlay = null;
+				repaint();
+			}
+			return;
+		}
+
+		String disclaimerText =
+			"<html><div style='width:360px;text-align:left;'>"
+			+ "<table width='100%' cellpadding='0' cellspacing='0'><tr>"
+			+ "<td><b>Disclaimer</b></td>"
+			+ "<td align='right'><font color='gray'><i>[Click anywhere to close]</i></font></td>"
+			+ "</tr></table><br>"
+			+ "Thoth AI is a simulation tool designed to provide predictions "
+			+ "based on historical data and trends.<br><br>"
+			+ "It does not guarantee future results and may make incorrect predictions.<br><br>"
+			+ "Do not rely solely on Thoth AI for investment decisions. "
+			+ "Consult a qualified financial advisor when necessary."
+			+ "</div></html>";
+
+		JLabel text = new JLabel(disclaimerText);
+		text.setForeground(Color.LIGHT_GRAY);
+		text.setFont(Thoth.customFont.deriveFont(12f));
+
+		JPanel content = new JPanel(new BorderLayout());
+		content.setOpaque(false);
+		content.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+		content.add(text, BorderLayout.CENTER);
+
+		disclaimerOverlay = new JPanel(new BorderLayout()) {
+			@Override
+			protected void paintComponent(Graphics g) {
+				Graphics2D g2 = (Graphics2D) g;
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+									RenderingHints.VALUE_ANTIALIAS_ON);
+				g2.setColor(new Color(30, 30, 30, 220));
+				g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+				super.paintComponent(g);
+			}
+		};
+		disclaimerOverlay.setOpaque(false);
+		disclaimerOverlay.add(content, BorderLayout.CENTER);
+
+		disclaimerOverlay.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				toggleDisclaimer(false);
+			}
+		});
+
+		// Layout & positioning
+		setLayout(null);
+
+		Dimension pref = disclaimerOverlay.getPreferredSize();
+		int width = pref.width;
+		int height = pref.height;
+
+		int x = (getWidth() - width) - 10;
+		int y = getHeight() - height - 40;
+
+		disclaimerOverlay.setBounds(x, y, width, height);
+		add(disclaimerOverlay);
+		setComponentZOrder(disclaimerOverlay, 0);
+		revalidate();
+		repaint();
 	}
 
 	/**
@@ -427,54 +532,53 @@ private void drawGrid(Graphics2D g2) {
     int w = getWidth() * 10;
     int h = getHeight() * 4;
     int minorStep = 20;
-    int majorStep = 80;
+    int majorStep = 100;
     Color minorColor = new Color(255, 255, 255, 20);
     Color majorColor = new Color(255, 255, 255, 45);
     
     g2.setStroke(new BasicStroke(1f));
     g2.setColor(minorColor);
+
+	int hoffset = 10;
+    int axisX = 60;
+	int axisY = 98;
     
     // Lignes verticales mineures
-    for (int x = 0; x <= w; x += minorStep) {
-        double xx = x + 0.5;
-        g2.draw(new Line2D.Double(xx, 0, xx, h));
+    for (int x = minorStep; x <= w + minorStep; x += minorStep) {
+		if (x == minorStep) continue;
+        g2.draw(new Line2D.Double(-axisX + x, 0, -axisX + x, h + axisY));
     }
     
     // Lignes horizontales mineures
-    for (int y = 0; y <= h; y += minorStep) {
-        double yy = y + 0.5;
-        g2.draw(new Line2D.Double(0, yy, w, yy));
+    for (int y = minorStep; y <= h; y += minorStep) {
+        g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
     }
 
     // Lignes majeures
     g2.setStroke(new BasicStroke(1f));
     g2.setColor(majorColor);
     
-    for (int x = 0; x <= w; x += majorStep) {
-        double xx = x + 0.5;
-        g2.draw(new Line2D.Double(xx, 0, xx, h));
+    for (int x = majorStep; x <= w; x += majorStep) {
+        g2.draw(new Line2D.Double(-axisX + x + minorStep, 0, -axisX + x + minorStep, h + axisY));
     }
     
-    for (int y = 0; y <= h; y += majorStep) {
-        double yy = y + 0.5;
-        g2.draw(new Line2D.Double(0, yy, w, yy));
+    for (int y = majorStep; y <= h; y += majorStep) {
+        g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
     }
 
     Color axisColor = new Color(255, 255, 255, 160);
     Color labelColor = new Color(200, 200, 200, 200);
 
-    // Dessiner les axes principaux
+	// main axes
     g2.setColor(axisColor);
     g2.setStroke(new BasicStroke(2f));
     
-    // Axe X (horizontal) - en bas
-    g2.draw(new Line2D.Double(0, h - 0.5, w, h - 0.5));
-    
-    // Axe Y (vertical) - à gauche avec marge pour labels
-    int axisX = 60;
-    g2.draw(new Line2D.Double(axisX + 0.5, 0, axisX + 0.5, h));
+    // axes X et Y
+	float toffset = 0f;
+    g2.draw(new Line2D.Double(axisX, h - toffset, axisX + w, h - toffset));
+    g2.draw(new Line2D.Double(axisX + toffset, 0, axisX + toffset, h));
 
-    // === GRADUATIONS AXE Y (ordonnées) - Pas de 100 ===
+    // graduations
     g2.setFont(new Font("Monospaced", Font.PLAIN, 10));
     FontMetrics fm = g2.getFontMetrics();
     
@@ -483,35 +587,29 @@ private void drawGrid(Graphics2D g2) {
     
     // Graduations y
     for (int value = 0; value <= 10000; value += valueStep) {
-        // Position Y : en partant du bas (h) et en remontant
         int yPos = h - (value * pixelPerValue);
         
-        if (yPos < 0) break;  // Ne pas dessiner hors limites
+        if (yPos < 0) break;
         
-        // Petit trait de graduation
         g2.setColor(axisColor);
         g2.drawLine(axisX - 5, yPos, axisX + 5, yPos);
         
-        // Label
         g2.setColor(labelColor);
         String label = String.valueOf(value);
         int labelWidth = fm.stringWidth(label);
         g2.drawString(label, axisX - labelWidth - 10, yPos + 4);
     }
 
-    // GRADUATIONS AXE X (abscisses) - Mois (pas de 1)
-    int monthPixelStep = 20;  // Doit correspondre à xoffset dans drawMainFrame
+    int monthPixelStep = 20;  // à xoffset dans drawMainFrame
     
-    for (int month = 0; month <= 50; month++) {
+    for (int month = 0; month <= (int) (w / monthPixelStep); month++) {
         int xPos = axisX + (month * monthPixelStep);
-        
         if (xPos > w) break;
-        
-        // Petit trait de graduation
+
         g2.setColor(axisColor);
         g2.drawLine(xPos, h - 5, xPos, h + 5);
         
-        // Label tous les 3 mois pour ne pas surcharger
+        // label tous les 3 mois
         if (month % 3 == 0) {
             g2.setColor(labelColor);
             String label = String.valueOf(month % 12 + 1);
@@ -520,7 +618,6 @@ private void drawGrid(Graphics2D g2) {
         }
     }
     
-    // Labels des axes
     g2.setColor(labelColor);
     g2.setFont(new Font("Monospaced", Font.BOLD, 11));
     g2.drawString("Valeur", 5, 15);
@@ -542,6 +639,15 @@ private void drawGrid(Graphics2D g2) {
 		// Information
 		g.setColor(Color.LIGHT_GRAY);
 		g.drawString("Thoth AI does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
+
+		// [?] button as box
+		if (disclaimerButton == null) {
+			disclaimerButton = new java.awt.Rectangle(this.getWidth() - 23, this.getHeight() - 23, 20, 20);
+		}
+		g.setColor(Window.THEME_COLOR.darker());
+		g.fill(disclaimerButton);
+		g.setColor(Color.LIGHT_GRAY);
+		g.drawString("[?]", this.getWidth() - 22, this.getHeight() - 10);
 	}
 
 	public static Color colorFromIndex(int index) {
