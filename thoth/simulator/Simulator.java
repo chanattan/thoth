@@ -36,6 +36,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.Popup;
 import javax.swing.Timer;
 import javax.swing.border.Border;
+import thoth.logic.AI.Prediction;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
 import thoth.logic.Action;
@@ -232,7 +233,7 @@ public class Simulator extends JPanel {
 						popup = null;
 					} else {
 						popup = thoth.AI.popInfo(Simulator.this, mousePos.x, mousePos.y);
-						thothButton.toggleAnimation(false);
+						//thothButton.toggleAnimation(false);
 						popup.show();
 					}
 				}
@@ -302,6 +303,20 @@ public class Simulator extends JPanel {
 	private int dx = 0;
 	private float hue = 0;
 	private boolean update() {
+		// Thoth notification
+		Prediction nextPrediction = thoth.AI.predictNextMove();
+		if (nextPrediction.fund == null || nextPrediction.getConfidenceLevel() <= 2) {
+			//popup.hide();
+			//popup = null;
+			thothButton.toggleAnimation(false);
+			System.out.println("no Prediction");
+			repaint();
+		} else if (nextPrediction.fund != null) {
+			System.out.println("new Prediction");
+			thothButton.toggleAnimation(true);
+			repaint();
+		}
+		// Animation line
 		dx += 10;
 		if (dx > this.getWidth()) dx = 0;
 

@@ -103,6 +103,12 @@ public class InvestorPanel extends JPanel {
                 }
             }
         });
+        investmentField.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                investmentField.select(0, investmentField.getText().length());
+            }
+        });
         
         investmentField.setOpaque(false);
         investmentField.setText("0");
@@ -117,14 +123,24 @@ public class InvestorPanel extends JPanel {
         investButton.setOpaque(true);
         investButton.setBackground(Color.ORANGE);
         investButton.setBorder(null);
+        // add enter action listener
+        investButton.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+                    investButton.doClick();
+                }
+            }
+        });
         investButton.addActionListener((ActionEvent e) -> {
             Fund selectedFund = thoth.window.getSimulator().selectedFund;
             if (investmentField.getText().isEmpty()) {
                 investmentField.setText("0");
             }
-            double val = Double.parseDouble(investmentField.getText());
+
+            double val = Double.parseDouble(df.format(Double.parseDouble(investmentField.getText())));
             double c = thoth.player.getCapital();
-            if (selectedFund != null) {
+            if (selectedFund != null && val > 0) {
                 try {
                     thoth.player.invest(thoth.window.getSimulator().getTime(), val, selectedFund);
                     capitalLabel.setText("$" + df.format(c) + " - $" + df.format(val) + " [" + selectedFund.getName() + "]");
@@ -187,7 +203,7 @@ public class InvestorPanel extends JPanel {
                 actionPanel.setBackground(Color.BLACK);
                 JLabel nameLabel = new JLabel("Fund: " + f.getName());
                 nameLabel.setForeground(f.getColor());
-                JLabel valueLabel = new JLabel("Value: " + df.format(a.getFund().getValueChangePercent()) + "%");
+                JLabel valueLabel = new JLabel("Value: " + (a.getPlusValue() >= 0 ? "+" : "") + df.format(a.getPlusValue()) + "%");
                 valueLabel.setForeground(Color.GREEN.darker());
                 JLabel shareLabel = new JLabel("Shares: " + df.format(a.getShare()));
                 shareLabel.setForeground(Color.BLUE.darker());
@@ -211,11 +227,11 @@ public class InvestorPanel extends JPanel {
                     .filter(obj -> obj[0] == a)
                     .forEach(obj -> {
                         JLabel valueLabel = (JLabel) obj[1];
-                        valueLabel.setText("Value: " + df.format(a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 1)[0] / a.getFund().getCurve().getLastValues(a.getFund().getCurve().getSteps() - 2)[0]) + "%");
+                        valueLabel.setText("Value: " + (a.getPlusValue() >= 0 ? "+" : "") + df.format(a.getPlusValue()) + "%");
                         JLabel shareLabel = (JLabel) obj[2];
                         shareLabel.setText("Shares: " + df.format(a.getShare()));
                     });
-                System.out.println("Updated action display for fund: " + f.getName() + ", value: " + a.getValue());
+                System.out.println("Updated action display for fund: " + f.getName() + ", value: " + a.getPlusValue());
             }
         }
         // Remove sold actions from display
