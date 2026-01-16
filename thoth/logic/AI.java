@@ -8,7 +8,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
-import thoth.simulator.Simulator;
 import thoth.simulator.Thoth;
 
 public class AI {
@@ -105,7 +104,7 @@ public class AI {
         // Including autopop.
     }
 
-    public Popup popInfo(JComponent component, int x, int y) {
+    public Popup popInfo(JComponent component) {
         JLabel fundLabel = null;
         JLabel noFundLabel = null;
         Color BG_COLOR = new Color(30, 30, 30);
@@ -257,18 +256,14 @@ public class AI {
         closeButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                ((Simulator) component).popup = null;
-                //((Simulator) component).thothButton.toggleAnimation(true);
-                popup.hide();
+                thoth.window.sim.removeThoth();
             }
         });
 
         borderPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                ((Simulator) component).popup = null;
-                //((Simulator) component).thothButton.toggleAnimation(true);
-                popup.hide();
+                thoth.window.sim.removeThoth();
             }
         });
 

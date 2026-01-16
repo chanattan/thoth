@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Rectangle;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
@@ -17,10 +18,15 @@ public class FundsPanel extends JPanel {
     private Rectangle clearButton = null;
     private Rectangle modeButton = null;
     private int mode = 0;
+    private boolean poppedThoth = false;
+
+    private Image thothImage = null;
 
     public FundsPanel(Thoth thoth) {
         this.thoth = thoth;
         this.setLayout(new BorderLayout());
+
+        thothImage = Thoth.getThothIcon();
 
         this.setBackground(Color.BLACK);
         addMouseListener(mouseEvent());
@@ -51,12 +57,15 @@ public class FundsPanel extends JPanel {
                     int fundY = globalYOffset + yOffset * i;
                     if (clickY >= fundY - 15 && clickY <= fundY + 15) {
                         clickedFund = thoth.funds.get(i);
+                        thoth.window.sim.removeThoth();
                         System.out.println("Clicked on fund: " + clickedFund.getName());
                         break;
                     }
                 }
 
+                // Fund selected
                 if (clickedFund != null) {
+                    thoth.logger.startMeasure("decision_time_ms");
                     thoth.window.sim.selectedFund = clickedFund;
                     repaint();
                 }
@@ -71,6 +80,18 @@ public class FundsPanel extends JPanel {
                 if (modeButton != null && modeButton.contains(e.getPoint())) {
                     thoth.window.sim.setFundDisplay(mode = (mode + 1) % 3);
                     repaint();
+                }
+
+                // Thoth button
+                if (clickedFund != null) {
+                    Rectangle thothButtonBounds = new Rectangle(FundsPanel.this.getWidth() - 50, globalYOffset + yOffset * thoth.funds.indexOf(clickedFund) - 15, 20, 20);
+                    if (thothButtonBounds.contains(e.getPoint())) {
+                        if (poppedThoth)
+                            thoth.window.sim.popupThoth();
+                        else
+                            thoth.window.sim.removeThoth();
+                        poppedThoth = !poppedThoth;
+                    }
                 }
             }
         };
@@ -111,6 +132,9 @@ public class FundsPanel extends JPanel {
             if (clickedFund == f) {
                 g.setColor(new Color(255, 255, 255, 50));
                 g.fillRoundRect(10, globalYOffset + yOffset * l - 20, this.getWidth() - 20, 25, 10, 10);
+
+                // Draw Thoth for help
+                g.drawImage(thothImage, this.getWidth() - 50, globalYOffset + yOffset * l - 15, 20, 20, null);
             }
 
 			Color c = f.getColor();

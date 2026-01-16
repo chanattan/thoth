@@ -138,6 +138,9 @@ public class InvestorPanel extends JPanel {
                 investmentField.setText("0");
             }
 
+            // Even if there might be some user error, we stop measure here.
+            thoth.logger.stopMeasure("decision_time_ms");
+
             double val = Double.parseDouble(df.format(Double.parseDouble(investmentField.getText())));
             double c = thoth.player.getCapital();
             if (selectedFund != null && val > 0) {

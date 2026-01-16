@@ -18,6 +18,15 @@ public class Window extends JFrame {
 		setTitle("Thoth Simulator");
 		Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+				// Save data before closing
+				thoth.logger.saveData();
+				System.exit(0);
+			}
+		});
 		setExtendedState(JFrame.MAXIMIZED_BOTH);
 		setSize(screenSize);
 		getContentPane().setBackground(THEME_COLOR);

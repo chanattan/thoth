@@ -95,9 +95,6 @@ public class AnimatedPopup {
         // apply alpha for all painting inside this panel
         g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
 
-        // DO NOT call super.paintComponent(g2), it paints the opaque background!
-        // super.paintComponent(g2);
-
         g2.dispose();
     }
 }

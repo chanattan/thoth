@@ -1,6 +1,7 @@
 package thoth.simulator;
 
 import java.awt.Font;
+import java.awt.Image;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import thoth.log.Logger;
 import thoth.logic.AI;
 import thoth.logic.Fund;
 import thoth.logic.Player;
@@ -18,6 +20,7 @@ public class Thoth {
 
     public ArrayList<News> news;
     public ArrayList<Fund> funds;
+    public Logger logger;
     public Player player;
     public Random r;
     public Window window;
@@ -33,6 +36,7 @@ public class Thoth {
         this.r = new Random();
         this.window = null;
         this.AI = new AI(this);
+        this.logger = new Logger();
         customFont = loadFont(14f);
     }
 
@@ -87,6 +91,15 @@ public class Thoth {
         return new Object[]{String.format("%02d", displayMonth), year};
     }
 
+    public static Image getThothIcon() {
+        try {
+            return ImageIO.read(new File("assets/thoth.png"));
+        } catch (IOException ex) {
+            System.getLogger(Thoth.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+            return null;
+        }
+    }
+
     public static void main(String[] args) {
         boolean splash = false;
         if (!splash) {
@@ -94,11 +107,7 @@ public class Thoth {
                 Thoth thoth = new Thoth();
                 Window w = new Window(thoth);
                 thoth.window = w;
-                try {
-                    w.setIconImage(ImageIO.read(new File("assets/thoth.png")));
-                } catch (IOException ex) {
-                    System.getLogger(Thoth.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-                }
+                w.setIconImage(Thoth.getThothIcon());
                 w.setLocationRelativeTo(null);
                 w.getSimulator().fillData(thoth.funds);
             });
@@ -110,11 +119,7 @@ public class Thoth {
                 Thoth thoth = new Thoth();
                 Window w = new Window(thoth);
                 thoth.window = w;
-                try {
-                    w.setIconImage(ImageIO.read(new File("assets/thoth.png")));
-                } catch (IOException ex) {
-                    System.getLogger(Thoth.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-                }
+                w.setIconImage(Thoth.getThothIcon());
                 w.setLocationRelativeTo(null);
                 w.getSimulator().fillData(thoth.funds);
             });

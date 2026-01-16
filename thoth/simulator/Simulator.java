@@ -273,16 +273,32 @@ public class Simulator extends JPanel {
 				Point mousePos = e.getPoint();
 				if (mousePos != null) {
 					if (popup != null) {
-						popup.hide();
-						popup = null;
+						removeThoth();
 					} else {
-						popup = thoth.AI.popInfo(Simulator.this, mousePos.x, mousePos.y);
-						//thothButton.toggleAnimation(false);
-						popup.show();
+						popupThoth();
 					}
 				}
 			}
 		});
+	}
+
+	/**
+	 * Triggers Thoth.
+	 */
+	public void popupThoth() {
+		if (popup != null) return;
+		thoth.logger.startMeasure("human_read_thoth");
+		popup = thoth.AI.popInfo(Simulator.this);
+		//thothButton.toggleAnimation(false);
+		popup.show();
+	}
+
+	public void removeThoth() {
+		if (popup != null) {
+			thoth.logger.stopMeasure("human_read_thoth");
+			popup.hide();
+			popup = null;
+		}
 	}
 
 	private JPanel disclaimerOverlay;
