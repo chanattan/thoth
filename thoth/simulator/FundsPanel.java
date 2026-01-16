@@ -15,6 +15,8 @@ public class FundsPanel extends JPanel {
     public JSplitPane parentPane;
     private Fund clickedFund = null;
     private Rectangle clearButton = null;
+    private Rectangle modeButton = null;
+    private int mode = 0;
 
     public FundsPanel(Thoth thoth) {
         this.thoth = thoth;
@@ -62,6 +64,12 @@ public class FundsPanel extends JPanel {
                 // Check if clear button is clicked
                 if (clearButton != null && clearButton.contains(e.getPoint())) {
                     clearFocus();
+                    repaint();
+                }
+
+                // Check mode button
+                if (modeButton != null && modeButton.contains(e.getPoint())) {
+                    thoth.window.sim.setFundDisplay(mode = (mode + 1) % 3);
                     repaint();
                 }
             }
@@ -125,6 +133,17 @@ public class FundsPanel extends JPanel {
         g.fill(clearButton);
         g.setColor(Color.WHITE);
         g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 12f));
-        g.drawString("Clear Selection", clearButton.x + 2, clearButton.y + 15);
+        g.drawString("Clear Selection", clearButton.x + 2, clearButton.y + 14);
+
+        // Mode buttons
+        modeButton = new Rectangle(12, this.getHeight() - 40, 50, 20);
+        g.setColor(new Color(255, 255, 255, 50));
+        g.fillRect(modeButton.x - 2, modeButton.y - 2, modeButton.width + 5, modeButton.height + 5);
+        g.setColor(Color.WHITE);
+        g.fill(modeButton);
+        g.setColor(Color.BLACK);
+        g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 13f));
+        String txt = mode == 0 ? "Month" : mode == 1 ? "Quarter" : "Year";
+        g.drawString(txt, modeButton.x + (mode == 0 ? 8 : mode == 1 ? 6 : 13), modeButton.y + 14);
 	}
 }

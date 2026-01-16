@@ -528,108 +528,108 @@ public class Simulator extends JPanel {
 		this.drawHeader(g);
 	}
 
-private void drawGrid(Graphics2D g2) {
-    int w = getWidth() * 10;
-    int h = getHeight() * 4;
-    int minorStep = 20;
-    int majorStep = 100;
-    Color minorColor = new Color(255, 255, 255, 20);
-    Color majorColor = new Color(255, 255, 255, 45);
-    
-    g2.setStroke(new BasicStroke(1f));
-    g2.setColor(minorColor);
+	private void drawGrid(Graphics2D g2) {
+		int w = getWidth() * 10;
+		int h = getHeight() * 4;
+		int minorStep = 20;
+		int majorStep = 100;
+		Color minorColor = new Color(255, 255, 255, 20);
+		Color majorColor = new Color(255, 255, 255, 45);
+		
+		g2.setStroke(new BasicStroke(1f));
+		g2.setColor(minorColor);
 
-	int hoffset = 10;
-    int axisX = 60;
-	int axisY = 98;
-    
-    // Lignes verticales mineures
-    for (int x = minorStep; x <= w + minorStep; x += minorStep) {
-		if (x == minorStep) continue;
-        g2.draw(new Line2D.Double(-axisX + x, 0, -axisX + x, h + axisY));
-    }
-    
-    // Lignes horizontales mineures
-    for (int y = minorStep; y <= h; y += minorStep) {
-        g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
-    }
+		int hoffset = 10;
+		int axisX = 60;
+		int axisY = 98;
+		
+		// Lignes verticales mineures
+		for (int x = minorStep; x <= w + minorStep; x += minorStep) {
+			if (x == minorStep) continue;
+			g2.draw(new Line2D.Double(-axisX + x, 0, -axisX + x, h + axisY));
+		}
+		
+		// Lignes horizontales mineures
+		for (int y = minorStep; y <= h; y += minorStep) {
+			g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
+		}
 
-    // Lignes majeures
-    g2.setStroke(new BasicStroke(1f));
-    g2.setColor(majorColor);
-    
-    for (int x = majorStep; x <= w; x += majorStep) {
-        g2.draw(new Line2D.Double(-axisX + x + minorStep, 0, -axisX + x + minorStep, h + axisY));
-    }
-    
-    for (int y = majorStep; y <= h; y += majorStep) {
-        g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
-    }
+		// Lignes majeures
+		g2.setStroke(new BasicStroke(1f));
+		g2.setColor(majorColor);
+		
+		for (int x = majorStep; x <= w; x += majorStep) {
+			g2.draw(new Line2D.Double(-axisX + x + minorStep, 0, -axisX + x + minorStep, h + axisY));
+		}
+		
+		for (int y = majorStep; y <= h; y += majorStep) {
+			g2.draw(new Line2D.Double(-axisX + minorStep, y - hoffset + axisY, (-axisX) + w + minorStep, y - hoffset + axisY));
+		}
 
-    Color axisColor = new Color(255, 255, 255, 160);
-    Color labelColor = new Color(200, 200, 200, 200);
+		Color axisColor = new Color(255, 255, 255, 160);
+		Color labelColor = new Color(200, 200, 200, 200);
 
-	// main axes
-    g2.setColor(axisColor);
-    g2.setStroke(new BasicStroke(2f));
-    
-    // axes X et Y
-	float toffset = 0f;
-    g2.draw(new Line2D.Double(axisX, h - toffset, axisX + w, h - toffset));
-	AffineTransform at = g2.getTransform();
-	
-	if (at.getTranslateX() < axisX - 50) {
-		//g2.scale(scale, scale);
-		g2.translate(-offsetX, 0);
+		// main axes
+		g2.setColor(axisColor);
+		g2.setStroke(new BasicStroke(2f));
+		
+		// axes X et Y
+		float toffset = 0f;
+		g2.draw(new Line2D.Double(axisX, h - toffset, axisX + w, h - toffset));
+		AffineTransform at = g2.getTransform();
+		
+		if (at.getTranslateX() < axisX - 50) {
+			//g2.scale(scale, scale);
+			g2.translate(-offsetX, 0);
+		}
+		g2.draw(new Line2D.Double(axisX + toffset, 0, axisX + toffset, h));
+
+		// graduations
+		g2.setFont(new Font("Monospaced", Font.PLAIN, 10));
+		FontMetrics fm = g2.getFontMetrics();
+		
+		int valueStep = 100;
+		int pixelPerValue = 1;
+		
+		// Graduations y
+		for (int value = 0; value <= 10000; value += valueStep) {
+			int yPos = h - (value * pixelPerValue);
+			
+			if (yPos < 0) break;
+			
+			g2.setColor(axisColor);
+			g2.drawLine(axisX - 5, yPos, axisX + 5, yPos);
+			
+			g2.setColor(labelColor);
+			String label = String.valueOf(value);
+			int labelWidth = fm.stringWidth(label);
+			g2.drawString(label, axisX - labelWidth - 10, yPos + 4);
+		}
+		g2.setTransform(at);
+
+		int monthPixelStep = 20;  // à xoffset dans drawMainFrame
+		
+		for (int month = 0; month <= (int) (w / monthPixelStep); month++) {
+			int xPos = axisX + (month * monthPixelStep);
+			if (xPos > w) break;
+
+			g2.setColor(axisColor);
+			g2.drawLine(xPos, h - 5, xPos, h + 5);
+			
+			// label tous les 3 mois
+			if (month % 3 == 0) {
+				g2.setColor(labelColor);
+				String label = String.valueOf(month % 12 + 1);
+				int labelWidth = fm.stringWidth(label);
+				g2.drawString(label, xPos - labelWidth / 2, h + 18);
+			}
+		}
+		
+		g2.setColor(labelColor);
+		g2.setFont(new Font("Monospaced", Font.BOLD, 11));
+		g2.drawString("Valeur", 5, 15);
+		g2.drawString("Temps (mois)", w - 120, h - 10);
 	}
-    g2.draw(new Line2D.Double(axisX + toffset, 0, axisX + toffset, h));
-
-    // graduations
-    g2.setFont(new Font("Monospaced", Font.PLAIN, 10));
-    FontMetrics fm = g2.getFontMetrics();
-    
-    int valueStep = 100;
-    int pixelPerValue = 1;
-    
-    // Graduations y
-    for (int value = 0; value <= 10000; value += valueStep) {
-        int yPos = h - (value * pixelPerValue);
-        
-        if (yPos < 0) break;
-        
-        g2.setColor(axisColor);
-        g2.drawLine(axisX - 5, yPos, axisX + 5, yPos);
-        
-        g2.setColor(labelColor);
-        String label = String.valueOf(value);
-        int labelWidth = fm.stringWidth(label);
-        g2.drawString(label, axisX - labelWidth - 10, yPos + 4);
-    }
-	g2.setTransform(at);
-
-    int monthPixelStep = 20;  // à xoffset dans drawMainFrame
-    
-    for (int month = 0; month <= (int) (w / monthPixelStep); month++) {
-        int xPos = axisX + (month * monthPixelStep);
-        if (xPos > w) break;
-
-        g2.setColor(axisColor);
-        g2.drawLine(xPos, h - 5, xPos, h + 5);
-        
-        // label tous les 3 mois
-        if (month % 3 == 0) {
-            g2.setColor(labelColor);
-            String label = String.valueOf(month % 12 + 1);
-            int labelWidth = fm.stringWidth(label);
-            g2.drawString(label, xPos - labelWidth / 2, h + 18);
-        }
-    }
-    
-    g2.setColor(labelColor);
-    g2.setFont(new Font("Monospaced", Font.BOLD, 11));
-    g2.drawString("Valeur", 5, 15);
-    g2.drawString("Temps (mois)", w - 120, h - 10);
-}
 
 	private void drawHeader(Graphics2D g) {
 		// Animation line
@@ -667,12 +667,21 @@ private void drawGrid(Graphics2D g2) {
         return Color.getHSBColor(hue, saturation, brightness);
     }
 
-	private void drawMainFrame(Graphics2D g) {
-		// For each fund, display its associated curve in a different color.
-        int colorIndex = 0;
-		int xoffset = 20;
-		int yoffset = 0;
+	private int mode = 1;
+	/**
+	 * Sets the fund display mode.
+	 * 0 : monthly
+	 * 1 : quarterly
+	 * 2 : yearly
+	 */
+	public void setFundDisplay(int mode) {
+		if (mode < 0 || mode > 2) {
+			mode = 0;
+		}
+		this.mode = mode;
+	}
 
+	private void drawMainFrame(Graphics2D g) {
 		// Draw worldPt in the correct coordinate space
 		if (click != null) {
 			g.setColor(Color.ORANGE);
@@ -687,7 +696,14 @@ private void drawGrid(Graphics2D g2) {
 			g.setStroke(oldStroke);
 		}
 
-		// Draw curves
+		drawCurves(g);
+	}
+
+	private void drawCurves(Graphics2D g) {
+		// For each fund, display its associated curve in a different color.
+		int xoffset = 20;
+		int yoffset = 0;
+
 		for (int y = 0; y < this.funds.size(); y++) {
 			Fund fund = this.funds.get(y);
 
@@ -700,26 +716,63 @@ private void drawGrid(Graphics2D g2) {
             g.setColor(c);
 				
             Curve curve = fund.getCurve();
-			float effect = 0; //this.thoth.getEffect(name);
-
 			int offset = xoffset;
-			int[] values = curve.getLastValues(0); // Get all values for now.
-            for (int i = 0; i < values.length - 1; i++) {
-				int x1 = (i+1) * offset;
-				int x2 = (i+2) * offset;
-				int y1 = (int) values[i] + yoffset;
-				int y2 = (int) values[i+1] + yoffset;
-                g.drawLine(x1, -y1, x2, -y2);
-				g.fillOval(x1 - 3, -y1 - 3, 6, 6);
-            }
 
-			if (values.length > 0) {
-				int xlast = values.length * offset;
-				int ylast = (int) values[values.length - 1] + yoffset;
-				g.fillOval(xlast - 3, -ylast - 3, 6, 6);
+			switch (mode) {
+				case 0 -> 					{
+						int[] values = curve.getLastValues(0); // Get all values for now.
+						for (int i = 0; i < values.length - 1; i++) {
+							int x1 = (i+1) * offset;
+							int x2 = (i+2) * offset;
+							int y1 = (int) values[i] + yoffset;
+							int y2 = (int) values[i+1] + yoffset;
+							g.drawLine(x1, -y1, x2, -y2);
+							g.fillOval(x1 - 3, -y1 - 3, 6, 6);
+						}
+						if (values.length > 0) {
+							int xlast = values.length * offset;
+							int ylast = (int) values[values.length - 1] + yoffset;
+							g.fillOval(xlast - 3, -ylast - 3, 6, 6);
+						}
+					}
+				case 1 -> 					{
+						int[] values = curve.getLastValues(0);
+						// capture values quaterly
+						for (int i = 0; i < values.length - 1; i += 3) {
+							int x1 = (i+1) * offset;
+							int x2 = (i+4) * offset;
+							int y1 = (int) values[i] + yoffset;
+							int y2 = (int) values[Math.min(i+3, values.length - 1)] + yoffset;
+							g.drawLine(x1, -y1, x2, -y2);
+							g.fillOval(x1 - 3, -y1 - 3, 6, 6);
+						}
+						if (values.length > 0) {
+							int lastIndex = ((values.length - 1) / 3) * 3;
+							int xlast = (lastIndex + 1) * offset;
+							int ylast = (int) values[lastIndex] + yoffset;
+							g.fillOval(xlast - 3, -ylast - 3, 6, 6);
+						}
+					}
+				case 2 -> 					{
+						int[] values = curve.getLastValues(0);
+						// capture values yearly
+						for (int i = 0; i < values.length - 1; i += 12) {
+							int x1 = (i+1) * offset;
+							int x2 = (i+13) * offset;
+							int y1 = (int) values[i] + yoffset;
+							int y2 = (int) values[Math.min(i+12, values.length - 1)] + yoffset;
+							g.drawLine(x1, -y1, x2, -y2);
+							g.fillOval(x1 - 3, -y1 - 3, 6, 6);
+						}
+						if (values.length > 0) {
+							int lastIndex = ((values.length - 1) / 12) * 12;
+							int xlast = (lastIndex + 1) * offset;
+							int ylast = (int) values[lastIndex] + yoffset;
+							g.fillOval(xlast - 3, -ylast - 3, 6, 6);
+						}
+					}
+				default -> {}
 			}
-
-            colorIndex++;
         }
 	}
 }
