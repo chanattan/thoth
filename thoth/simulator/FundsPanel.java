@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import thoth.logic.Fund;
@@ -13,6 +14,7 @@ public class FundsPanel extends JPanel {
     private Thoth thoth;
     public JSplitPane parentPane;
     private Fund clickedFund = null;
+    private Rectangle clearButton = null;
 
     public FundsPanel(Thoth thoth) {
         this.thoth = thoth;
@@ -24,6 +26,14 @@ public class FundsPanel extends JPanel {
     
     public void updatePanel() {
         repaint();
+    }
+
+    public void clearFocus() {
+        this.clickedFund = null;
+    }
+
+    public Fund getClickedFund() {
+        return this.clickedFund;
     }
 
     private java.awt.event.MouseAdapter mouseEvent() {
@@ -46,6 +56,12 @@ public class FundsPanel extends JPanel {
 
                 if (clickedFund != null) {
                     thoth.window.sim.selectedFund = clickedFund;
+                    repaint();
+                }
+
+                // Check if clear button is clicked
+                if (clearButton != null && clearButton.contains(e.getPoint())) {
+                    clearFocus();
                     repaint();
                 }
             }
@@ -99,5 +115,16 @@ public class FundsPanel extends JPanel {
             float val = f.getValueChangePercent();
             NewsPanel.drawColoredParenthesesText(g, String.format("(" + (val >= 0 ? "+" : "") + "%.2f%%)", val), 125, globalYOffset + yOffset * l, val >= 0 ? Color.GREEN.darker() : Color.RED.darker());
 		}
+
+        // Clear button
+        // Background button
+        clearButton = new Rectangle(this.getWidth() - 80, this.getHeight() - 40, 70, 20);
+        g.setColor(new Color(255, 255, 255, 50));
+        g.fillRect(clearButton.x - 2, clearButton.y - 2, clearButton.width + 5, clearButton.height + 5);
+        g.setColor(Color.RED);
+        g.fill(clearButton);
+        g.setColor(Color.WHITE);
+        g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 12f));
+        g.drawString("Clear Selection", clearButton.x + 2, clearButton.y + 15);
 	}
 }

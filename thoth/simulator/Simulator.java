@@ -576,6 +576,12 @@ private void drawGrid(Graphics2D g2) {
     // axes X et Y
 	float toffset = 0f;
     g2.draw(new Line2D.Double(axisX, h - toffset, axisX + w, h - toffset));
+	AffineTransform at = g2.getTransform();
+	
+	if (at.getTranslateX() < axisX - 50) {
+		//g2.scale(scale, scale);
+		g2.translate(-offsetX, 0);
+	}
     g2.draw(new Line2D.Double(axisX + toffset, 0, axisX + toffset, h));
 
     // graduations
@@ -599,6 +605,7 @@ private void drawGrid(Graphics2D g2) {
         int labelWidth = fm.stringWidth(label);
         g2.drawString(label, axisX - labelWidth - 10, yPos + 4);
     }
+	g2.setTransform(at);
 
     int monthPixelStep = 20;  // à xoffset dans drawMainFrame
     
@@ -683,11 +690,17 @@ private void drawGrid(Graphics2D g2) {
 		// Draw curves
 		for (int y = 0; y < this.funds.size(); y++) {
 			Fund fund = this.funds.get(y);
-            Curve curve = fund.getCurve();
-			float effect = 0; //this.thoth.getEffect(name);
 
 			Color c = Simulator.colorFromIndex(y + 10);
+
+			Fund clickedFund = thoth.window.fundsPanel.getClickedFund();
+			if (clickedFund != null && clickedFund != fund)
+				c = new Color(c.getRed(), c.getGreen(), c.getBlue(), 90).darker().darker(); // dim other funds
+				
             g.setColor(c);
+				
+            Curve curve = fund.getCurve();
+			float effect = 0; //this.thoth.getEffect(name);
 
 			int offset = xoffset;
 			int[] values = curve.getLastValues(0); // Get all values for now.
