@@ -53,6 +53,7 @@ public class Simulator extends JPanel {
 	private Point2D worldPt;
 	private final Timer time;
 	private int currentTimeStep = 10; // mois
+	private int timeStepSpeed = 3000; // 3 seconds 
 	private Popup tipPopup = null;
 
 	// Mouse dragging
@@ -64,13 +65,13 @@ public class Simulator extends JPanel {
 	private double targetOffsetY = 0;
 
 	// Lerp factor
-	private static final double LERP = 0.15;
+	private static final double LERP = 0.2;
 	private double zoomAnchorX = 0; // world coordinates under cursor
 	private double zoomAnchorY = 0;
 	private boolean zooming = false;
 	private double targetScale = 1.0; // zoom
 	private double velocityScale = 0.0;
-	private static final double SMOOTHNESS = 0.5;
+	private static final double SMOOTHNESS = 0.1;
 
 	// clamp zoom limits
 	private static final double MIN_SCALE = 0.1;
@@ -203,20 +204,14 @@ public class Simulator extends JPanel {
 			@Override
             public void mouseWheelMoved(MouseWheelEvent e) {
 				double rotation = e.getPreciseWheelRotation();
-
 				Point p = e.getPoint();
-
 				double mouseWorldX = (p.x - offsetX) / scale;
 				double mouseWorldY = (p.y - offsetY) / scale;
 
-				zoomAnchorX = mouseWorldX;
-				zoomAnchorY = mouseWorldY;
-				zooming = true;
+				double zoomFactorPerNotch = 1.15; // >1 for zoom in
+				double factor = Math.pow(zoomFactorPerNotch, -rotation);
 
-				double zoomFactor = 0.015;
-				velocityScale += -rotation * zoomFactor;
-
-				targetScale = scale * (1.0 + velocityScale);
+				targetScale = scale * factor;
 				targetScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
 
 				targetOffsetX = p.x - mouseWorldX * targetScale;
@@ -235,7 +230,7 @@ public class Simulator extends JPanel {
 		createThothButton();
 
 		// Global timer
-		this.time = new Timer(3000, updateGlobal());
+		this.time = new Timer(timeStepSpeed, updateGlobal());
 		this.time.setInitialDelay(0);
 		this.time.start();
 	}
@@ -458,6 +453,7 @@ public class Simulator extends JPanel {
 		// Smooth lerp for offsets
 		offsetX += (targetOffsetX - offsetX) * LERP;
 		offsetY += (targetOffsetY - offsetY) * LERP;
+		scale += (targetScale  - scale) * LERP;
 
 		// Smooth scale
 		if (zooming && Math.abs(velocityScale) > 0.00001) {
@@ -596,7 +592,7 @@ public class Simulator extends JPanel {
 		
 		if (at.getTranslateX() < axisX - 50) {
 			//g2.scale(scale, scale);
-			g2.translate(-offsetX, 0);
+			g2.translate(-offsetX / scale, 0);
 		}
 		g2.draw(new Line2D.Double(axisX + toffset, 0, axisX + toffset, h));
 
@@ -683,7 +679,7 @@ public class Simulator extends JPanel {
         return Color.getHSBColor(hue, saturation, brightness);
     }
 
-	private int mode = 1;
+	private int mode = 0;
 	/**
 	 * Sets the fund display mode.
 	 * 0 : monthly

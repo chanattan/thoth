@@ -19,7 +19,7 @@ public class Logger {
         Date d = new Date();
         d.setTime(System.currentTimeMillis());
         timestamp = d.toString();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy-HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         timestamp = formatter.format(d);
         System.out.println("Logger initialized at " + timestamp);
         session_id = System.getProperty("user.name").hashCode();
@@ -48,6 +48,8 @@ public class Logger {
 
     /**
      * This functions prepares data by averaging all measures done, then exports all them.
+     *  timestamp, session_id, trial_id, condition, event_type, trigger, ai_output, ai_uncertainty, explanation_variant, human_action, user_confidence, correct, decision_time_ms, slice_id, precondition_ok, abstained, fallback_used, notes
+
      */
     public void saveData() {
         // Prepare data
