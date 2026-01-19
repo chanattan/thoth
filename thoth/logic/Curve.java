@@ -2,6 +2,7 @@ package thoth.logic;
 
 import java.util.ArrayList;
 import java.util.Random;
+
 public class Curve {
     private float fmb_min_movement;
     private float fbm_max_movement;
@@ -42,12 +43,21 @@ public class Curve {
 
         this.prev_fbm = 0f;
 
-        this.values = new ArrayList<Integer>();
-        this.values.add((int)this.rng.nextFloat(100f, 200f));
-        this.prev_value = this.values.get(0);
-
-        for (int i = 0; i < 10; ++i) {
-            this.storeValue(this.nextValue(this.rng.nextFloat(-100f, 100f)));
+        float startPrice = switch(rng.nextInt(4)) {
+            case 0 -> rng.nextFloat(1500f, 4000f);  // Tech US
+            case 1 -> rng.nextFloat(1200f, 2200f);  // Stable US
+            case 2 -> rng.nextFloat(350f, 800f);    // Growth
+            default -> rng.nextFloat(45f, 85f);     // Europe banque
+        };
+        
+        this.values = new ArrayList<>();
+        this.values.add((int)startPrice);
+        this.prev_value = startPrice;
+        this.prev_fbm = 0f;
+        
+        // Pré-génère 10 valeurs
+        for (int i = 0; i < 10; i++) {
+            storeValue(nextValue(rng.nextFloat(-80f, 120f))); // News effect réaliste
         }
     }
 
@@ -55,7 +65,7 @@ public class Curve {
      * @return the number of elapsed steps.
     */
     public int getSteps() {
-        return this.values.size();
+        return this.values.size() - 1; // -1, to have the last step as pre-generated (for AI).
     }
 
     /**
@@ -63,11 +73,19 @@ public class Curve {
      */
     public static Curve generateCurve() {
         Random r = new Random();
-        float fbm_min_movement = -100;
-        float fbm_max_movement = 100;
-        float chaos_factor = r.nextFloat(0.5f, 1f);
-
-        return new Curve(fbm_min_movement, fbm_max_movement, chaos_factor);
+        
+        // 4 archétypes bourse réalistes
+        int type = r.nextInt(4);
+        return switch (type) {
+            case 0 -> new Curve(-180f, 250f, 0.85f, r.nextInt(100));
+            case 1 -> new Curve(-90f, 140f, 0.45f, r.nextInt(100));
+            case 2 -> new Curve(-140f, 180f, 0.78f, r.nextInt(100));
+            case 3 -> new Curve(-50f, 80f, 0.32f, r.nextInt(100));
+            default -> new Curve(-100f, 150f, 0.65f, r.nextInt(100));
+        }; // Tech bull (Tesla-like) : +volatilité haute
+        // Stable croissance (Apple-like)
+        // Volatil cyclique (Netflix-like)
+        // Stable défensif (BNP-like)
     }
 
     /**
@@ -99,11 +117,15 @@ public class Curve {
      * If the offset = this.values.size() -1, the last value only is returned.
      */
     public int[] getLastValues(int offset) {
-        int[] lastValues = new int[this.values.size() - offset];
-        for (int i = offset; i < this.values.size(); i++) {
+        int[] lastValues = new int[this.values.size() - 1 - offset];
+        for (int i = offset; i < this.values.size() - 1; i++) {
             lastValues[i - offset] = this.values.get(i);
         }
         return lastValues;
+    }
+
+    public int getPregeneratedValue() {
+        return this.values.get(this.values.size() - 1);
     }
 
     public void storeValue(float value) {

@@ -7,8 +7,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Rectangle;
+
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
+
 import thoth.logic.Fund;
 
 public class FundsPanel extends JPanel {
@@ -57,8 +59,8 @@ public class FundsPanel extends JPanel {
                     int fundY = globalYOffset + yOffset * i;
                     if (clickY >= fundY - 15 && clickY <= fundY + 15) {
                         clickedFund = thoth.funds.get(i);
-                        thoth.window.sim.removeThoth();
-                        System.out.println("Clicked on fund: " + clickedFund.getName());
+                        //thoth.window.sim.removeThoth();
+                        //System.out.println("Clicked on fund: " + clickedFund.getName());
                         break;
                     }
                 }
@@ -113,7 +115,7 @@ public class FundsPanel extends JPanel {
         // background for title
         g.setColor(Color.ORANGE);
         int padding = 10;
-        g.fillRoundRect(x - padding, y - fm.getAscent() - 7, fm.stringWidth(header) + 3 * padding + 5, fm.getHeight() + 10, 15, 15);
+        g.fillRect(x - padding, y - fm.getAscent() - 7, fm.stringWidth(header) + 3 * padding + 5, fm.getHeight() + 10);
 
         g.setColor(Color.BLACK);
         g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 20f));
@@ -130,11 +132,11 @@ public class FundsPanel extends JPanel {
 
             // Background for selected fund
             if (clickedFund == f) {
-                g.setColor(new Color(255, 255, 255, 50));
-                g.fillRoundRect(10, globalYOffset + yOffset * l - 20, this.getWidth() - 20, 25, 10, 10);
+                g.setColor(new Color(25, 25, 25));
+                g.fillRect(10, globalYOffset + yOffset * l - 20, this.getWidth() - 20, 25);
 
                 // Draw Thoth for help
-                g.drawImage(thothImage, this.getWidth() - 50, globalYOffset + yOffset * l - 15, 20, 20, null);
+                g.drawImage(thothImage, this.getWidth() - 50, globalYOffset + yOffset * l - 17, 20, 20, null);
             }
 
 			Color c = f.getColor();

@@ -24,22 +24,23 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
+import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextPane;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
-import javax.swing.PopupFactory;
-import javax.swing.SwingConstants;
 import javax.swing.Timer;
-import thoth.logic.AI.Prediction;
+
+import thoth.logic.Action;
+import thoth.logic.ArimaPredictor;
 import thoth.logic.Curve;
 import thoth.logic.Fund;
+import thoth.logic.Prediction;
 import thoth.ui.HaloLabel;
 
 @SuppressWarnings("serial")
@@ -52,8 +53,8 @@ public class Simulator extends JPanel {
 	private AffineTransform currTransform = null;
 	private Point2D worldPt;
 	private final Timer time;
-	private int currentTimeStep = 10; // mois
-	private int timeStepSpeed = 3000; // 3 seconds 
+	private int currentTimeStep = 10 - 1; // mois, -1 for pregenerated value
+	private int timeStepSpeed = 6000; // 3 seconds 
 	private Popup tipPopup = null;
 
 	// Mouse dragging
@@ -87,6 +88,10 @@ public class Simulator extends JPanel {
 	// Display
 	public HaloLabel thothButton;
 	private Rectangle disclaimerButton;
+    public static long lastHintTime = 0;
+	public int somewhatHelpful = 0;
+	public int foundHelpful = 0;
+	public int notHelpful = 0;
 
 	public Simulator(Thoth thoth) {
         setBackground(Color.BLACK);
@@ -134,6 +139,8 @@ public class Simulator extends JPanel {
 					
 					AffineTransform screenToWorld = completeTransform.createInverse();
 					worldPt = screenToWorld.transform(e.getPoint(), null);
+					//System.out.println("Mode: " + mode + ", Points size: " + points.size() + ", WorldPt: " + worldPt);
+
 
 					double threshold = 15 / scale; 
 					click = null;
@@ -143,22 +150,41 @@ public class Simulator extends JPanel {
 						double dist = worldPt.distance(p);
 						if (dist < threshold) {
 							click = p;
-							System.out.println("Considering Fund " + f.getName());
-							// Popup for info fund
-							// Retrieve time step
-							int timeStep = (int) (p.x / 20) - 1; // since x = (i+1)*20
-							Object[] dateInfo = Thoth.getDateStatic(timeStep);
+							
+							// Calculate the actual month index from x position
+							// x = (i+1) * 20, so i = (x/20) - 1
+							int monthIndex = (int) (p.x / 20) - 1;
+							
+							// Clamp to valid range
+							if (monthIndex < 0) monthIndex = 0;
+							
+							int rawIndex = monthIndex;
+							
+							Object[] dateInfo = Thoth.getDateStatic(rawIndex);
 							String month = (String) dateInfo[0];
 							int year = (int) dateInfo[1];
-							String tooltipText = "<html><center><span style='color:black'><b>" + f.getName() + "</b></span><br>" +
-								"<span style='color:gray'>[" + month + "/" + year + "]</center></span><br>" +
-								"Fund Value: " + f.getCurve().getLastValues(timeStep)[0] + "<br>" +
-								"(Click for more details)</html>";
+							String tooltipText;
+							boolean hasAction = thoth.player.hasInvestedIn(f) && thoth.player.getAction(rawIndex, f) != null;
+							DecimalFormat df = new DecimalFormat("#.##");
+							if (hasAction) {
+								Action a = thoth.player.getAction(rawIndex, f);
+								// display info about user's investment rather than generic fund info
+								tooltipText = "<html><center><span style='color:black'><b>" + f.getName() + "</b></span><br>" +
+									"<span style='color:'>[" + month + "/" + year + "]</center></span><br>" +
+									"Bought Value: " + a.getBoughtValue() + "<br>" +
+									"Your Share: " + df.format(a.getShare()) + "<br>" +
+									"Fund Value: " + f.getCurve().getLastValues(rawIndex)[0] + "<br>" +
+									"Plus Value: " + a.getPlusValue() + "%</html>";
+							} else {
+								tooltipText = "<html><center><span style='color:black'><b>" + f.getName() + "</b></span><br>" +
+									"<span style='color:gray'>[" + month + "/" + year + "]</center></span><br>" +
+									"Fund Value: " + f.getCurve().getLastValues(rawIndex)[0] + "</html>";
+							}
 
 							JToolTip tooltip = createToolTip();
 							tooltip.setTipText(tooltipText);
-							tooltip.setBackground(new Color(50, 50, 50, 230));
-							tooltip.setForeground(Color.WHITE);
+							tooltip.setBackground(hasAction ? Color.ORANGE.darker() : new Color(50, 50, 50, 230));
+							tooltip.setForeground(hasAction ? Color.BLACK : Color.WHITE);
 							tooltip.setBorder(javax.swing.BorderFactory.createLineBorder(Color.GRAY));
 
 							javax.swing.PopupFactory factory = javax.swing.PopupFactory.getSharedInstance();
@@ -230,14 +256,31 @@ public class Simulator extends JPanel {
 		createThothButton();
 
 		// Global timer
+		new Timer(500, e -> {
+			// Thoth notification (when to pop?)
+			thoth.prediction = ArimaPredictor.recommend(thoth);
+			Prediction nextPrediction = thoth.prediction;
+			if (thothButton != null && (nextPrediction.fund == null || nextPrediction.getAdjustedConfidenceLevel() <= 1 || nextPrediction.getExpectedReturn() <= 0.5)) {
+				//popup.hide();
+				//popup = null;
+				thothButton.toggleAnimation(false);
+				//System.out.println("no Prediction");
+				repaint();
+			} else if (nextPrediction.fund != null) {
+				//System.out.println("new Prediction");
+				thothButton.toggleAnimation(true);
+				repaint();
+			}
+		}).start();
 		this.time = new Timer(timeStepSpeed, updateGlobal());
 		this.time.setInitialDelay(0);
 		this.time.start();
 	}
 
 	public final void createThothButton() {
+		String assetPath = "assets/thoth.png";
 		javax.swing.ImageIcon originalIcon = new javax.swing.ImageIcon(
-			getClass().getResource("../../assets/thoth.png")
+			new java.io.File(assetPath).getAbsolutePath()
 		);
 		java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(originalIcon.getIconWidth() / 9, 
 		originalIcon.getIconHeight() / 9, java.awt.Image.SCALE_SMOOTH);
@@ -282,7 +325,6 @@ public class Simulator extends JPanel {
 	 */
 	public void popupThoth() {
 		if (popup != null) return;
-		thoth.logger.startMeasure("human_read_thoth");
 		popup = thoth.AI.popInfo(Simulator.this);
 		//thothButton.toggleAnimation(false);
 		popup.show();
@@ -290,7 +332,6 @@ public class Simulator extends JPanel {
 
 	public void removeThoth() {
 		if (popup != null) {
-			thoth.logger.stopMeasure("human_read_thoth");
 			popup.hide();
 			popup = null;
 		}
@@ -376,22 +417,87 @@ public class Simulator extends JPanel {
                     thoth.window.investorPanel.updateInventoryPanel();
                 };
 	}
+
+	private void updatePointsList() {
+		// For clicks on tipPopup
+		points.clear();
+		int yoffset = 0;
+		int xoffset = 20; // base offset
+		
+		for (Fund f : funds) {
+			Curve curve = f.getCurve();
+			int[] values = curve.getLastValues(0);
+			int step = switch(mode) {
+				case 0 -> 1;
+				case 1 -> 3;
+				case 2 -> 12;
+				default -> 1;
+			};
+			
+			// Match the drawing code exactly
+			switch(mode) {
+				case 0 -> {
+					// Monthly: (i+1) * offset for each point
+					for (int i = 0; i < values.length; i++) {
+						int x1 = (i + 1) * xoffset;
+						int y1 = values[i] + yoffset;
+						Point2D.Double point = new Point2D.Double(x1, -y1);
+						points.add(new Object[]{point, f});
+					}
+				}
+				case 1 -> {
+					// Quarterly: (i+1) * offset for every 3rd month
+					for (int i = 0; i < values.length; i += 3) {
+						int x1 = (i + 1) * xoffset;
+						int y1 = values[i] + yoffset;
+						Point2D.Double point = new Point2D.Double(x1, -y1);
+						points.add(new Object[]{point, f});
+					}
+				}
+				case 2 -> {
+					// Yearly: (i+1) * offset for every 12th month
+					for (int i = 0; i < values.length; i += 12) {
+						int x1 = (i + 1) * xoffset;
+						int y1 = values[i] + yoffset;
+						Point2D.Double point = new Point2D.Double(x1, -y1);
+						points.add(new Object[]{point, f});
+					}
+				}
+			}
+		}
+	}
+	
 	private void updateSimulator() {
 		// Temps global.
 		currentTimeStep += 1;
 
 		// Génération des nouvelles valeurs.
 		for (Fund f : funds) {
-			// Mettre à jour news
-			thoth.seekNews(f.getName());
-			// Mettre à jour valeurs
+			// Mettre à jour valeurs (des news du mois précédent -> temps actuel)
 			Curve c = f.getCurve();
-			float effect = thoth.useEffect(f.getName()); // TODO: the effect is permanent. make it on a period, for now only once.
+			float effect = thoth.useEffect(f.getName());
 			int nextVal = (int) c.nextValue(effect);
 			c.storeValue(nextVal);
+			
+			// Mettre à jour news
+			thoth.seekNews(f.getName());
 
 			// Plus-value des actions pour l'utilisateur : màj.
-			// TODO.
+			ArrayList<Action> userActions = thoth.player.getActions().get(f);
+			for (Action userAction : userActions != null ? userActions : new ArrayList<Action>()) {
+				if (userAction != null && userAction.getBoughtTime() >= currentTimeStep - 1 && userAction.getBoughtTime() < currentTimeStep + 2) {
+					// Calculer si correct (plus-value > 0 ?)
+					boolean wasCorrect = userAction.getPlusValue() > 0;
+					double confidence = 0.8; // À adapter (question UI ?)
+					
+					thoth.logger.logSubmit(
+						confidence,           // 0.0-1.0
+						wasCorrect ? "Y" : "N",
+						"Plus-value (3m): " + userAction.getPlusValue() + "% sur " + f.getName()
+					);
+					System.out.println("Logging investment result: " + (wasCorrect ? "correct" : "incorrect") + " for " + f.getName());
+				}
+			}
 		}
 
 		// Màj panels
@@ -400,20 +506,7 @@ public class Simulator extends JPanel {
 		thoth.window.fundsPanel.updatePanel();
 
 		// Mettre à jour les points pour clicks
-		points.clear(); // juste ajouter les derniers...
-		int offset = 20;
-		int yoffset = 0;
-		for (Fund f : funds) {
-			Curve curve = f.getCurve();
-			int[] values = curve.getLastValues(0);
-			for (int l = 0; l < curve.getSteps(); l++) {
-				int x1 = (l+1) * offset;
-				int val = (int) values[l];
-				int y1 = val + yoffset;
-				Point2D.Double point = new Point2D.Double(x1, -y1);
-				points.add(new Object[] {point, f});
-			}
-		}
+		updatePointsList();
 	}
 
 	public int getTime() {
@@ -430,19 +523,6 @@ public class Simulator extends JPanel {
 	private int dx = 0;
 	private float hue = 0;
 	private boolean update() {
-		// Thoth notification
-		Prediction nextPrediction = thoth.AI.predictNextMove();
-		if (nextPrediction.fund == null || nextPrediction.getConfidenceLevel() <= 2) {
-			//popup.hide();
-			//popup = null;
-			thothButton.toggleAnimation(false);
-			//System.out.println("no Prediction");
-			repaint();
-		} else if (nextPrediction.fund != null) {
-			//System.out.println("new Prediction");
-			thothButton.toggleAnimation(true);
-			repaint();
-		}
 		// Animation line
 		dx += 10;
 		if (dx > this.getWidth()) dx = 0;
@@ -586,9 +666,9 @@ public class Simulator extends JPanel {
 		g2.setStroke(new BasicStroke(2f));
 		
 		// axes X et Y
+		AffineTransform at = g2.getTransform();
 		float toffset = 0f;
 		g2.draw(new Line2D.Double(axisX, h - toffset, axisX + w, h - toffset));
-		AffineTransform at = g2.getTransform();
 		
 		if (at.getTranslateX() < axisX - 50) {
 			//g2.scale(scale, scale);
@@ -657,7 +737,7 @@ public class Simulator extends JPanel {
 
 		// Information
 		g.setColor(Color.LIGHT_GRAY);
-		g.drawString("Thoth AI does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
+		g.drawString("Thoth AI is a training simulation, it does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
 
 		// [?] button as box
 		if (disclaimerButton == null) {
@@ -687,10 +767,20 @@ public class Simulator extends JPanel {
 	 * 2 : yearly
 	 */
 	public void setFundDisplay(int mode) {
+		lastMode = this.mode;
 		if (mode < 0 || mode > 2) {
 			mode = 0;
 		}
 		this.mode = mode;
+		
+		updatePointsList();
+    
+    	click = null;
+		if (tipPopup != null) {
+			tipPopup.hide();
+			tipPopup = null;
+		}
+		repaint();
 	}
 
 	private void drawMainFrame(Graphics2D g) {
@@ -709,8 +799,29 @@ public class Simulator extends JPanel {
 		}
 
 		drawCurves(g);
+
+		// Draw actions
+		for (ArrayList<Action> userActions : thoth.player.getActions().values() == null ? new ArrayList<ArrayList<Action>>() : thoth.player.getActions().values()) {
+			for (Action a : userActions) {
+				Fund f = a.getFund();
+				Fund clickedFund = thoth.window.fundsPanel.getClickedFund();
+				Color c;
+				if (clickedFund != null && clickedFund != f)
+					c = new Color(255, 165, 0, 90);
+				else
+					c = Color.ORANGE;
+				g.setColor(c);
+
+				//if (a.position == null) continue; // not supposed to happen though
+				int timeStep = a.getBoughtTime();
+				int x = (timeStep + 1) * 20;
+				double y = a.getPriceAtPurchase();
+				g.fillOval(x - 5, (int) -y - 5, 10, 10);
+			}
+		}
 	}
 
+	private int lastMode = -1;
 	private void drawCurves(Graphics2D g) {
 		// For each fund, display its associated curve in a different color.
 		int xoffset = 20;
@@ -731,7 +842,7 @@ public class Simulator extends JPanel {
 			int offset = xoffset;
 
 			switch (mode) {
-				case 0 -> 					{
+				case 0 -> {
 						int[] values = curve.getLastValues(0); // Get all values for now.
 						for (int i = 0; i < values.length - 1; i++) {
 							int x1 = (i+1) * offset;
@@ -747,7 +858,7 @@ public class Simulator extends JPanel {
 							g.fillOval(xlast - 3, -ylast - 3, 6, 6);
 						}
 					}
-				case 1 -> 					{
+				case 1 -> {
 						int[] values = curve.getLastValues(0);
 						// capture values quaterly
 						for (int i = 0; i < values.length - 1; i += 3) {
@@ -765,7 +876,7 @@ public class Simulator extends JPanel {
 							g.fillOval(xlast - 3, -ylast - 3, 6, 6);
 						}
 					}
-				case 2 -> 					{
+				case 2 -> {
 						int[] values = curve.getLastValues(0);
 						// capture values yearly
 						for (int i = 0; i < values.length - 1; i += 12) {
@@ -784,6 +895,15 @@ public class Simulator extends JPanel {
 						}
 					}
 				default -> {}
+			}
+			if (lastMode != mode) {
+				click = null;
+				if (tipPopup != null) {
+					tipPopup.hide();
+					tipPopup = null;
+				}
+				repaint();
+				lastMode = mode;
 			}
         }
 	}

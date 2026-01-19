@@ -2,6 +2,7 @@ package thoth.simulator;
 
 import java.awt.Color;
 import java.awt.Dimension;
+
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
@@ -48,8 +49,8 @@ public class Window extends JFrame {
 		investorAndFundsSplit.setBorder(null);
 		investorAndFundsSplit.setForeground(THEME_COLOR);
 		JSplitPane investorSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, newsPanel, investorAndFundsSplit);
-		investorSplit.setDividerLocation(0.3);
-		investorSplit.setResizeWeight(0.3);
+		investorSplit.setDividerLocation(0.25);
+		investorSplit.setResizeWeight(0.25);
 		investorSplit.setBackground(THEME_COLOR);
 		investorSplit.setDividerSize(2);
 		investorSplit.setBorder(null);
@@ -59,11 +60,13 @@ public class Window extends JFrame {
 		splitPane.setDividerLocation(0.8);
 		splitPane.setResizeWeight(0.8);
 		splitPane.setBorder(null);
-		splitPane.setDividerSize(2);
+		splitPane.setDividerSize(3);
 		splitPane.setBackground(THEME_COLOR);
 		splitPane.setForeground(THEME_COLOR);
 		getContentPane().add(splitPane);
         setVisible(true);
+
+		investorPanel.registerGlobalEnterKey(this.getRootPane());
 	}
 
 	public Simulator getSimulator() {

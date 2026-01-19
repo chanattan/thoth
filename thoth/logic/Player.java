@@ -1,15 +1,16 @@
 package thoth.logic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
 public class Player {
     private double capital;
-    private HashMap<Fund, Action> actions;
+    private HashMap<Fund, ArrayList<Action>> actions;
 
     public Player(double capital) {
         this.capital = capital;
-        this.actions = new HashMap<Fund, Action>();
+        this.actions = new HashMap<Fund, ArrayList<Action>>();
     }
 
     public Player() {
@@ -30,25 +31,51 @@ public class Player {
         if (this.capital - boughtValue < 0)
             throw new InsufficientCapital(boughtValue, f);
         this.capital -= boughtValue;
-        Action existingAction = this.actions.get(f);
-        if (existingAction != null) {
-            existingAction.updateShare(boughtValue);
+        ArrayList<Action> existingActions = this.actions.get(f);
+        if (existingActions != null) {
+            Action a = getAction(boughtTime, f); // check if action at boughtTime already exists
+            if (a == null)
+                existingActions.add(new Action(boughtTime, boughtValue, f));
+            else
+                a.updateShare(boughtValue);
         } else {
-            this.actions.put(f, new Action(boughtTime, boughtValue, f));
+            ArrayList<Action> newActions = new ArrayList<>();
+            newActions.add(new Action(boughtTime, boughtValue, f));
+            this.actions.put(f, newActions);
         }
     }
 
     public void sellAction(Action a) {
-        if (!this.actions.containsValue(a)) {
-            return;
+        ArrayList<Action> fundActions = this.actions.get(a.getFund());
+        if (fundActions != null) {
+            if (fundActions.contains(a))
+                fundActions.remove(a);
+            if (fundActions.isEmpty()) {
+                this.actions.remove(a.getFund());
+            }
         }
         double actionValue = a.getValue();
         this.capital += actionValue;
-        this.actions.remove(a.getFund());
     }
 
-    public HashMap<Fund, Action> getActions() {
+    public boolean hasInvestedIn(Fund f) {
+        return this.actions.containsKey(f);
+    }
+
+    public HashMap<Fund, ArrayList<Action>> getActions() {
         return this.actions;
+    }
+
+    public Action getAction(int timeStep, Fund f) {
+        ArrayList<Action> fundActions = this.actions.get(f);
+        if (fundActions != null && timeStep >= 0) {
+            for (Action a : fundActions) {
+                if (a.getBoughtTime() == timeStep) {
+                    return a;
+                }
+            }
+        }
+        return null;
     }
 
     public static class InsufficientCapital extends Exception {

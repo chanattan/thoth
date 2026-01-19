@@ -8,12 +8,15 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.SwingUtilities;
+
 import thoth.log.Logger;
 import thoth.logic.AI;
 import thoth.logic.Fund;
 import thoth.logic.Player;
+import thoth.logic.Prediction;
 import thoth.ui.SplashIntro;
 
 public class Thoth {
@@ -28,6 +31,8 @@ public class Thoth {
     public static Font customFont;
     public static final int NB_NEWS_MAX = 5;
 
+    public Prediction prediction = null;
+
     public Thoth() {
         // Initializes simulation.
         this.news = News.generateNews(5);
@@ -37,6 +42,9 @@ public class Thoth {
         this.window = null;
         this.AI = new AI(this);
         this.logger = new Logger();
+        logger.setCondition("H_plus_IA");
+        logger.setSliceId("novice");
+        logger.setTrigger("on_demand");
         customFont = loadFont(14f);
     }
 
@@ -66,7 +74,8 @@ public class Thoth {
     }
 
     private Font loadFont(float size) {
-        try (InputStream is = Thoth.class.getResourceAsStream("../../assets/Grenze-SemiBold.ttf")) {
+        
+        try (InputStream is = new java.io.File("assets/Grenze-SemiBold.ttf").toURI().toURL().openStream()) {
 
             Font baseFont = Font.createFont(Font.TRUETYPE_FONT, is);
             return baseFont.deriveFont(size);

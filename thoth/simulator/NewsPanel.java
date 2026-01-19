@@ -10,10 +10,12 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.util.List;
+
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+
 import thoth.logic.Fund;
 
 public class NewsPanel extends JPanel {
@@ -78,7 +80,7 @@ public class NewsPanel extends JPanel {
         // background for title
         g.setColor(new Color(50, 50, 50));
         int padding = 10;
-        g.fillRoundRect(x - padding, y - fm.getAscent() - 7, fm.stringWidth(header) + 3 * padding + 5, fm.getHeight() + 10, 15, 15);
+        g.fillRect(x - padding, y - fm.getAscent() - 7, fm.stringWidth(header) + 3 * padding + 5, fm.getHeight() + 10);
 
         g.setColor(Color.WHITE);
         g.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 20f));
@@ -96,7 +98,7 @@ public class NewsPanel extends JPanel {
         int dateXPos = 10;
         int dateYPos = 20 - dateFm.getAscent();
         g.setColor(new Color(50, 50, 50));
-        g.fillRoundRect(dateXPos - datePadding, dateYPos - datePadding - 4, dateFm.stringWidth(dateStr) + 2 * datePadding, dateFm.getHeight() + 2 * datePadding, 10, 10);
+        g.fillRect(dateXPos - datePadding, dateYPos - datePadding - 4, dateFm.stringWidth(dateStr) + 2 * datePadding, dateFm.getHeight() + 2 * datePadding);
         int dateX = 10;
         int dateY = 20;
         g.setColor(Color.WHITE);
@@ -159,6 +161,15 @@ public class NewsPanel extends JPanel {
 
                 g.setColor(effectColor);
                 g.drawString(effectText, x + 3 + nameWidth + titleWidth, y + (fm.getDescent() / 2));
+                //int effectWidth = fm.stringWidth(effectText);
+
+                // Draw date next to effect text
+                /*Object[] dateInfo = Thoth.getDateStatic(WIDTH)
+                int month = Integer.parseInt((String) dateInfo[0]);
+                int year = (int) dateInfo[1];
+                String dateStr = " [" + String.format("%02d", month) + "/" + year + "]";
+                g.setColor(Color.GRAY);
+                g.drawString(dateStr, x + 3 + nameWidth + titleWidth + effectWidth, y + (fm.getDescent() / 2));*/
             } else {
                 Color c = (n.getInitialEffect() > 0) ? Color.GREEN.darker() : Color.RED.darker();
                 NewsPanel.drawColoredParenthesesText(g, txt, x + 3, y + (fm.getDescent() / 2), c);

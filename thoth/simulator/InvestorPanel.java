@@ -2,10 +2,15 @@ package thoth.simulator;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -41,7 +46,7 @@ public class InvestorPanel extends JPanel {
     private JTextField investmentField;
     private JButton investButton;
     private JPanel inventoryPanel;
-    private ArrayList<Object[]> shownActions;
+    private ArrayList<Action> shownActions;
     private JLabel capitalLabel;
     private JPanel actionsListPanel;
 
@@ -52,11 +57,12 @@ public class InvestorPanel extends JPanel {
         capital = 0;
         elapsedTime = 0;
 
-        shownActions = new ArrayList<Object[]>();
+        shownActions = new ArrayList<Action>();
         actionsListPanel = new JPanel();
         actionsListPanel.setLayout(
             new javax.swing.BoxLayout(actionsListPanel, javax.swing.BoxLayout.Y_AXIS)
         );
+        actionsListPanel.add(javax.swing.Box.createVerticalStrut(5));
         
         setupPanel();
     }
@@ -138,13 +144,18 @@ public class InvestorPanel extends JPanel {
                 investmentField.setText("0");
             }
 
-            // Even if there might be some user error, we stop measure here.
-            thoth.logger.stopMeasure("decision_time_ms");
-
             double val = Double.parseDouble(df.format(Double.parseDouble(investmentField.getText())));
             double c = thoth.player.getCapital();
             if (selectedFund != null && val > 0) {
                 try {
+                    // Logger
+                    String action = selectedFund == thoth.prediction.fund ? "accept" :  "override"; // ignore ou choisit autre chose
+                    
+                    thoth.logger.logUserAction(
+                        action,  // accept/override/ignore (override = ignore)
+                        "Investissement dans " + selectedFund.getName()
+                    );
+
                     thoth.player.invest(thoth.window.getSimulator().getTime(), val, selectedFund);
                     capitalLabel.setText("$" + df.format(c) + " - $" + df.format(val) + " [" + selectedFund.getName() + "]");
                     updateInventoryPanel();
@@ -174,13 +185,53 @@ public class InvestorPanel extends JPanel {
         panel.setBackground(Color.ORANGE);
         return panel;
     }
+    
+	public void registerGlobalEnterKey(javax.swing.JRootPane rootPane) {
+		javax.swing.InputMap inputMap = rootPane.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+		javax.swing.ActionMap actionMap = rootPane.getActionMap();
+		
+		inputMap.put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ENTER, 0), "invest");
+		actionMap.put("invest", new javax.swing.AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				investButton.doClick();
+			}
+		});
+	}
+
+    private JLabel makeHeaderLabel(String text) {
+        JLabel l = new JLabel(text, SwingConstants.LEFT);
+        l.setForeground(Color.WHITE);
+        l.setFont(Thoth.customFont.deriveFont(Font.BOLD, 12f));
+        return l;
+    }
 
     private JPanel createInventoryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.BLACK);
-        
-        JLabel title = new JLabel("Inventory");
-        panel.add(title, BorderLayout.NORTH);
+
+        // header row
+        JPanel north = new JPanel(new BorderLayout());
+        north.setBackground(Color.BLACK);
+
+        JLabel title = new JLabel("Inventory", SwingConstants.CENTER);
+        title.setForeground(Color.WHITE);
+        title.setFont(Thoth.customFont.deriveFont(Font.BOLD, 16f));
+        title.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        north.add(title, BorderLayout.NORTH);
+
+        // column headers
+        JPanel header = new JPanel(new GridLayout(1, 5));
+        header.setBackground(new Color(30, 30, 30));
+        header.setBorder(BorderFactory.createEmptyBorder(2, 40, 2, 8));
+        header.add(makeHeaderLabel("Fund"));
+        header.add(makeHeaderLabel("Value"));
+        header.add(makeHeaderLabel("Shares"));
+        header.add(makeHeaderLabel("Date"));
+        header.add(makeHeaderLabel("Action"));
+        north.add(header, BorderLayout.CENTER);
+
+        panel.add(north, BorderLayout.NORTH);
 
         actionsListPanel = new JPanel();
         actionsListPanel.setBackground(Color.BLACK);
@@ -190,70 +241,120 @@ public class InvestorPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(actionsListPanel);
         scrollPane.setBackground(Color.BLACK);
+        scrollPane.getViewport().setBackground(Color.BLACK);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+            this.thumbColor = Window.THEME_COLOR;
+            this.trackColor = Color.BLACK;
+            }
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+            return createZeroButton();
+            }
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+            return createZeroButton();
+            }
+            private JButton createZeroButton() {
+            JButton button = new JButton();
+            button.setPreferredSize(new Dimension(0, 0));
+            button.setMinimumSize(new Dimension(0, 0));
+            button.setMaximumSize(new Dimension(0, 0));
+            return button;
+            }
+        });
         panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private JPanel createActionRow(Fund f, Action a) {
+        JPanel actionRow = new JPanel(new GridLayout(1, 5));
+        actionRow.setBackground(new Color(25, 25, 25));
+        actionRow.setBorder(BorderFactory.createEmptyBorder(9, 33, 5, 5)); // match header padding
+        actionRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        actionRow.setAlignmentX(LEFT_ALIGNMENT);
+
+        JPanel fundCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fundCell.setOpaque(false);
+        JLabel nameLabel = new JLabel(f.getName());
+        nameLabel.setFont(Thoth.customFont.deriveFont(Font.BOLD, 15f));
+        nameLabel.setForeground(f.getColor());
+        fundCell.add(nameLabel);
+
+        JPanel valueCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        valueCell.setOpaque(false);
+        JLabel valueLabel = new JLabel((a.getPlusValue() >= 0 ? "+" : "") + df.format(a.getPlusValue()) + "%");
+        valueLabel.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 15f));
+        valueLabel.setForeground(a.getPlusValue() >= 0 ? Color.GREEN.darker() : Color.RED.darker());
+        valueCell.add(valueLabel);
+
+        JPanel shareCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        shareCell.setOpaque(false);
+        JLabel shareLabel = new JLabel(df.format(a.getShare()));
+        shareLabel.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 15f));
+        shareLabel.setForeground(Color.GRAY.brighter());
+        shareCell.add(shareLabel);
+
+        JPanel dateCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        dateCell.setOpaque(false);
+        Object[] dateInfo = Thoth.getDateStatic(a.getBoughtTime());
+        JLabel dateLabel = new JLabel(dateInfo[0] + "/" + dateInfo[1]);
+        dateLabel.setFont(Thoth.customFont.deriveFont(Font.PLAIN, 15f));
+        dateLabel.setForeground(Color.GRAY.brighter());
+        dateCell.add(dateLabel);
+
+        JPanel btnCell = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        btnCell.setOpaque(false);
+        JButton sellButton = new JButton("SELL");
+        sellButton.setFont(Thoth.customFont.deriveFont(Font.BOLD, 13f));
+        sellButton.setOpaque(true);
+        sellButton.setBackground(Color.LIGHT_GRAY);
+        sellButton.setBorder(BorderFactory.createEmptyBorder(1, 3, 1, 3));
+        sellButton.addActionListener(e -> {
+            capitalLabel.setText("$" + df.format(thoth.player.getCapital()) + (a.getValue() >= 0 ? "+" : "-") + " $" + df.format(a.getValue()) + " [" + a.getFund().getName() + "]");
+            thoth.player.sellAction(a);
+            elapsedTime = thoth.window.getSimulator().getTime();
+            updateInventoryPanel(); // refresh list
+        });
+        btnCell.add(sellButton);
+
+        actionRow.add(fundCell);
+        actionRow.add(valueCell);
+        actionRow.add(shareCell);
+        actionRow.add(dateCell);
+        actionRow.add(btnCell);
+
+        return actionRow;
     }
 
     public void updateInventoryPanel() {
         // Each action is a row with its details and a sell button.
         
         Player p = this.thoth.player;
+        actionsListPanel.removeAll();
+        actionsListPanel.add(Box.createVerticalStrut(5));
+        
+        // Rebuild all current actions
         for (Fund f : p.getActions().keySet()) {
-            Action a = p.getActions().get(f);
-            if (!shownActions.stream().anyMatch(obj -> obj[0] == a)) {
-                JPanel actionPanel = new JPanel();
-                actionPanel.setBackground(Color.BLACK);
-                JLabel nameLabel = new JLabel("Fund: " + f.getName());
-                nameLabel.setForeground(f.getColor());
-                JLabel valueLabel = new JLabel("Value: " + (a.getPlusValue() >= 0 ? "+" : "") + df.format(a.getPlusValue()) + "%");
-                valueLabel.setForeground(Color.GREEN.darker());
-                JLabel shareLabel = new JLabel("Shares: " + df.format(a.getShare()));
-                shareLabel.setForeground(Color.BLUE.darker());
-                JLabel dateLabel = new JLabel("Date: " + a.getBoughtTime());
-                dateLabel.setForeground(Color.RED.darker());
-                JButton sellButton = new JButton("Sell");
-                sellButton.addActionListener((ActionEvent e) -> {
-                    p.sellAction(a);
-                    updatePanel(thoth);
-                });
-                actionPanel.add(nameLabel);
-                actionPanel.add(valueLabel);
-                actionPanel.add(shareLabel);
-                actionPanel.add(dateLabel);
-                actionPanel.add(sellButton);
-                actionsListPanel.add(actionPanel);
-                shownActions.add(new Object[]{a, valueLabel, shareLabel});
-            } else {
-                // Update existing action display
-                shownActions.stream()
-                    .filter(obj -> obj[0] == a)
-                    .forEach(obj -> {
-                        JLabel valueLabel = (JLabel) obj[1];
-                        valueLabel.setText("Value: " + (a.getPlusValue() >= 0 ? "+" : "") + df.format(a.getPlusValue()) + "%");
-                        JLabel shareLabel = (JLabel) obj[2];
-                        shareLabel.setText("Shares: " + df.format(a.getShare()));
-                    });
-                System.out.println("Updated action display for fund: " + f.getName() + ", value: " + a.getPlusValue());
+            for (Action a : p.getActions().get(f)) {
+                JPanel actionRow = createActionRow(f, a);
+                actionsListPanel.add(actionRow);
+                actionsListPanel.add(Box.createVerticalStrut(5));
             }
         }
         // Remove sold actions from display
-        shownActions.removeIf(obj -> {
-            Action a = (Action) obj[0];
-            if (!p.getActions().containsValue(a)) {
-                // Find and remove the corresponding panel
-                for (int i = 0; i < actionsListPanel.getComponentCount(); i++) {
-                    JPanel actionPanel = (JPanel) actionsListPanel.getComponent(i);
-                    JLabel nameLabel = (JLabel) actionPanel.getComponent(0);
-                    if (nameLabel.getText().equals("Fund: " + a.getFund().getName())) {
-                        actionsListPanel.remove(actionPanel);
-                        break;
-                    }
-                }
+        shownActions.removeIf(a -> {
+            if (!p.getActions().containsKey(a.getFund()) || !p.getActions().get(a.getFund()).contains(a)) {
+                actionsListPanel.removeAll();
+                shownActions.remove(a);
                 return true;
             }
             return false;
         });
+
         actionsListPanel.revalidate();
         actionsListPanel.repaint();
         repaint();
