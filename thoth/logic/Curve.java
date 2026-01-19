@@ -77,11 +77,11 @@ public class Curve {
         // 4 archétypes bourse réalistes
         int type = r.nextInt(4);
         return switch (type) {
-            case 0 -> new Curve(-180f, 250f, 0.85f, r.nextInt(100));
-            case 1 -> new Curve(-90f, 140f, 0.45f, r.nextInt(100));
-            case 2 -> new Curve(-140f, 180f, 0.78f, r.nextInt(100));
-            case 3 -> new Curve(-50f, 80f, 0.32f, r.nextInt(100));
-            default -> new Curve(-100f, 150f, 0.65f, r.nextInt(100));
+            case 0 -> new Curve(-250f, 250f, 0.85f, r.nextInt(100));
+            case 1 -> new Curve(-140f, 140f, 0.45f, r.nextInt(100));
+            case 2 -> new Curve(-180f, 180f, 0.78f, r.nextInt(100));
+            case 3 -> new Curve(-80f, 80f, 0.32f, r.nextInt(100));
+            default -> new Curve(-150f, 150f, 0.65f, r.nextInt(100));
         }; // Tech bull (Tesla-like) : +volatilité haute
         // Stable croissance (Apple-like)
         // Volatil cyclique (Netflix-like)

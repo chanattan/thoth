@@ -37,15 +37,8 @@ public class News {
         if (this.elapsed >= this.persistence) {
             return 0.0f;
         }
-
-        float peak = this.persistence / 2;
-        float elapsed_tmp = this.elapsed;
-        this.elapsed += 1.0; 
-        if (elapsed_tmp >= peak) {
-            return lerp(0, this.effect, (elapsed_tmp - peak) / peak);
-        } else {
-            return lerp(this.effect, 0, elapsed_tmp / peak);
-        }
+        float t = 1f - (this.elapsed / this.persistence);
+        return (float) Math.sqrt(1.0f - Math.pow(t - 1.0f, 2)) * this.effect;
     }
 
     private float lerp(float a, float b, float factor) {
