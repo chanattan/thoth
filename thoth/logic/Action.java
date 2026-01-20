@@ -17,7 +17,7 @@ public class Action {
 
     public Action(int time, double investedValue, Fund fund) {
         this.time = time;
-        this.priceAtPurchase = fund.getCurve().getLastValues(time)[0];
+        this.priceAtPurchase = Math.max(fund.getCurve().getLastValues(time)[0], 0.01);
         this.share = investedValue / this.priceAtPurchase;
         this.boughtValue = investedValue;
         this.fund = fund;
@@ -27,7 +27,7 @@ public class Action {
         // Last available value of the fund's curve
         Curve c = this.fund.getCurve();
         double lastValue = c.getLastValues(c.getSteps() - 1)[0];
-        double newShare = newInvestedValue / lastValue; // share = value / price
+        double newShare = newInvestedValue / Math.max(lastValue, 0.01); // share = value / price
         this.share += newShare;
     }
 
@@ -36,11 +36,11 @@ public class Action {
     }
 
     public double getShare() {
-        return this.share;
+        return Math.max(this.share, 0.001);
     }
 
     public double getPlusValue() {
-        double lastValue = this.fund.getCurve().getLastValues(this.fund.getCurve().getSteps() - 1)[0];
+        double lastValue = Math.max(this.fund.getCurve().getLastValues(this.fund.getCurve().getSteps() - 1)[0], 0.01);
         return Double.parseDouble(df.format(lastValue / getPriceAtPurchase() * 100 - 100).replaceAll(",", ".")); // in percent
     }
 
@@ -49,8 +49,8 @@ public class Action {
      */
     public double getValue() {
         Curve c = this.fund.getCurve();
-        double lastValue = c.getLastValues(c.getSteps() - 1)[0];
-        return this.share * lastValue;
+        double lastValue = Math.max(c.getLastValues(c.getSteps() - 1)[0], 0.01);
+        return this.getShare() * lastValue;
     }
 
     public int getBoughtTime() {
@@ -58,7 +58,7 @@ public class Action {
     }
 
     public double getBoughtValue() {
-        return this.boughtValue;
+        return Math.max(this.boughtValue, 0.01);
     }
 
     public Fund getFund() {
