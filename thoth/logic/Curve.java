@@ -108,7 +108,7 @@ public class Curve {
         this.prev_fbm = rng.nextFloat(this.fmb_min_movement, this.fbm_max_movement) + (this.prev_fbm);
         this.prev_value += event_effect;
 
-        return Math.max(0f, lerp(this.prev_value, this.prev_fbm, chaos_factor));
+        return Math.max(1f, lerp(this.prev_value, this.prev_fbm, chaos_factor));
     }
 
     /**
