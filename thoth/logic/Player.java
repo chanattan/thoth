@@ -4,18 +4,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
+import thoth.simulator.Thoth;
+
 public class Player {
     private double capital;
     private HashMap<Fund, ArrayList<Action>> actions;
+    private Thoth thoth;
 
-    public Player(double capital) {
+    public Player(Thoth thoth, double capital) {
+        this.thoth = thoth;
         this.capital = capital;
         this.actions = new HashMap<Fund, ArrayList<Action>>();
     }
 
-    public Player() {
+    public Player(Thoth thoth) {
         Random rand = new Random();
-        this(100000 + rand.nextInt(300000));
+        this(thoth, 2500 + rand.nextInt(500));
     }
 
     public double getCapital() {
@@ -34,15 +38,32 @@ public class Player {
         ArrayList<Action> existingActions = this.actions.get(f);
         if (existingActions != null) {
             Action a = getAction(boughtTime, f); // check if action at boughtTime already exists
-            if (a == null)
-                existingActions.add(new Action(boughtTime, boughtValue, f));
-            else
+            if (a == null) {
+                Action b = new Action(boughtTime, boughtValue, f);
+                b.associatedPrediction = thoth.prediction.clone();
+                existingActions.add(b);
+            } else
                 a.updateShare(boughtValue);
         } else {
             ArrayList<Action> newActions = new ArrayList<>();
-            newActions.add(new Action(boughtTime, boughtValue, f));
+            Action a = new Action(boughtTime, boughtValue, f);
+            a.associatedPrediction = thoth.prediction.clone();
+            newActions.add(a);
             this.actions.put(f, newActions);
         }
+    }
+
+    public float getConfidence() {
+        int helpful = thoth.window.sim.foundHelpful;
+        int somewhat = thoth.window.sim.somewhatHelpful;
+        int notHelp = thoth.window.sim.notHelpful;
+        int total = helpful + somewhat + notHelp;
+        if (total == 0) return 0.5f; // neutre tant qu'on n'a pas de données
+
+        // Score entre -1 et +1
+        float rawScore = (helpful + 0.5f * somewhat - notHelp) / total; 
+        rawScore = Math.max(-1f, Math.min(1f, rawScore));
+        return (rawScore + 1f) / 2f; // entre 0 et 1
     }
 
     public void sellAction(Action a) {

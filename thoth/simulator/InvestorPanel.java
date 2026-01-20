@@ -149,14 +149,24 @@ public class InvestorPanel extends JPanel {
             if (selectedFund != null && val > 0) {
                 try {
                     // Logger
-                    String action = selectedFund == thoth.prediction.fund ? "accept" :  "override"; // ignore ou choisit autre chose
+                    String action;
+                    // si on est dans le contexte d'une popup IA, sous recommandation 3 mois
+                    if (thoth.window.sim.popup != null && thoth.window.getSimulator().getTime() - Simulator.lastHintStep <= 3) {
+                        action = selectedFund == thoth.prediction.fund ? "accept" :  "override"; // ne suit pas IA
+                    } else {
+                        action = "ignore"; // n'a pas utilisé IA
+                    }
                     
+                    thoth.logger.stopMeasure("decision_time_ms"); // au cas où pas d'utilisation IA
                     thoth.logger.logUserAction(
-                        action,  // accept/override/ignore (override = ignore)
+                        action,  // accept/override/ignore
+                        thoth.player.getConfidence(),
                         "Investissement dans " + selectedFund.getName()
                     );
 
                     thoth.player.invest(thoth.window.getSimulator().getTime(), val, selectedFund);
+
+                    thoth.logger.startMeasure("decision_time_ms"); // restart for next action
                     capitalLabel.setText("$" + df.format(c) + " - $" + df.format(val) + " [" + selectedFund.getName() + "]");
                     updateInventoryPanel();
                 } catch (Player.InsufficientCapital ex) {

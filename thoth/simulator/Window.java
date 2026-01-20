@@ -5,6 +5,8 @@ import java.awt.Dimension;
 
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
+import java.awt.Taskbar;
+import java.awt.Image;
 
 public class Window extends JFrame {
 	public final Simulator sim;
@@ -33,6 +35,18 @@ public class Window extends JFrame {
 		getContentPane().setBackground(THEME_COLOR);
 		setBackground(THEME_COLOR);
 		setAlwaysOnTop(true);
+		try {
+			Image icon = Thoth.getThothIcon(); // Retourne déjà Image
+			setIconImage(icon);
+			
+			// Pour macOS Dock (icône principale app)
+			if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+				Taskbar taskbar = Taskbar.getTaskbar();
+				taskbar.setIconImage(icon);
+			}
+		} catch (Exception e) {
+			System.err.println("Erreur icône: " + e.getMessage());
+		}
 		
 		// To put in InvestorPanel.
 		investorPanel = new InvestorPanel(thoth);
@@ -49,8 +63,8 @@ public class Window extends JFrame {
 		investorAndFundsSplit.setBorder(null);
 		investorAndFundsSplit.setForeground(THEME_COLOR);
 		JSplitPane investorSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, newsPanel, investorAndFundsSplit);
-		investorSplit.setDividerLocation(0.25);
-		investorSplit.setResizeWeight(0.25);
+		investorSplit.setDividerLocation(0.3);
+		investorSplit.setResizeWeight(0.3);
 		investorSplit.setBackground(THEME_COLOR);
 		investorSplit.setDividerSize(2);
 		investorSplit.setBorder(null);

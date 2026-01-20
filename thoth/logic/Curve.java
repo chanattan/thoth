@@ -89,12 +89,12 @@ public class Curve {
     }
 
     /**
-     * Gets the percentage change between the last two stored values.
+     * Gets the percentage change between the last two stored values (without pregenerated).
      */
     public float getValueChangePercent() {
-        if (this.values.size() < 2) return 0f;
-        int lastValue = this.values.get(this.values.size() - 1);
-        int prevValue = this.values.get(this.values.size() - 2);
+        if (this.getSteps() < 2) return 0f;
+        int lastValue = this.values.get(this.getSteps() - 1);
+        int prevValue = this.values.get(this.getSteps() - 2);
         if (prevValue == 0) return 0f;
         return ((float)(lastValue - prevValue) / Math.abs((float)prevValue)) * 100f;
     }

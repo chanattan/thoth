@@ -24,9 +24,9 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
-import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -52,9 +52,11 @@ public class Simulator extends JPanel {
     private Point2D.Double click = null;
 	private AffineTransform currTransform = null;
 	private Point2D worldPt;
-	private final Timer time;
+	public final Timer time; // global timer
+	public final Timer animationTime; // animation timer
+
 	private int currentTimeStep = 10 - 1; // mois, -1 for pregenerated value
-	private int timeStepSpeed = 6000; // 3 seconds 
+	private int timeStepSpeed = 10000; // 3 seconds 
 	private Popup tipPopup = null;
 
 	// Mouse dragging
@@ -89,6 +91,7 @@ public class Simulator extends JPanel {
 	public HaloLabel thothButton;
 	private Rectangle disclaimerButton;
     public static long lastHintTime = 0;
+	public static int lastHintStep = 0;
 	public int somewhatHelpful = 0;
 	public int foundHelpful = 0;
 	public int notHelpful = 0;
@@ -97,12 +100,12 @@ public class Simulator extends JPanel {
         setBackground(Color.BLACK);
 		this.thoth = thoth;
 		// Timer for global animation that updates every 16ms.
-        new Timer(16, e -> {
+        this.animationTime = new Timer(16, e -> {
             boolean repaint = update();
 			if (repaint) {
             	repaint();
 			}
-        }).start();
+        });
 
 		this.funds = thoth.funds;
 
@@ -256,32 +259,12 @@ public class Simulator extends JPanel {
 		createThothButton();
 
 		// Global timer
-		new Timer(500, e -> {
-			// Thoth notification (when to pop?)
-			thoth.prediction = ArimaPredictor.recommend(thoth);
-			Prediction nextPrediction = thoth.prediction;
-			if (thothButton != null && (nextPrediction.fund == null || nextPrediction.getAdjustedConfidenceLevel() <= 1 || nextPrediction.getExpectedReturn() <= 0.5)) {
-				//popup.hide();
-				//popup = null;
-				thothButton.toggleAnimation(false);
-				//System.out.println("no Prediction");
-				repaint();
-			} else if (nextPrediction.fund != null) {
-				//System.out.println("new Prediction");
-				thothButton.toggleAnimation(true);
-				repaint();
-			}
-		}).start();
 		this.time = new Timer(timeStepSpeed, updateGlobal());
 		this.time.setInitialDelay(0);
-		this.time.start();
 	}
 
 	public final void createThothButton() {
-		String assetPath = "assets/thoth.png";
-		javax.swing.ImageIcon originalIcon = new javax.swing.ImageIcon(
-			new java.io.File(assetPath).getAbsolutePath()
-		);
+		javax.swing.ImageIcon originalIcon = new ImageIcon(Thoth.getThothIcon());
 		java.awt.Image scaledImage = originalIcon.getImage().getScaledInstance(originalIcon.getIconWidth() / 9, 
 		originalIcon.getIconHeight() / 9, java.awt.Image.SCALE_SMOOTH);
 
@@ -354,9 +337,9 @@ public class Simulator extends JPanel {
 			+ "<td><b>Disclaimer</b></td>"
 			+ "<td align='right'><font color='gray'><i>[Click anywhere to close]</i></font></td>"
 			+ "</tr></table><br>"
-			+ "Thoth AI is a simulation tool designed to provide predictions "
+			+ "Thoth is a simulation tool designed to provide predictions "
 			+ "based on historical data and trends.<br><br>"
-			+ "It does not guarantee future results and may make incorrect predictions.<br><br>"
+			+ "Thoth AI does not guarantee future results and may make incorrect predictions.<br><br>"
 			+ "Do not rely solely on Thoth AI for investment decisions. "
 			+ "Consult a qualified financial advisor when necessary."
 			+ "</div></html>";
@@ -415,6 +398,21 @@ public class Simulator extends JPanel {
 		return (ActionEvent e) -> {
                     updateSimulator();
                     thoth.window.investorPanel.updateInventoryPanel();
+
+					// Thoth notification (when to pop?)
+					thoth.AI.update(); // create recommendations for other funds
+					Prediction nextPrediction = thoth.prediction;
+					if (thothButton != null && (nextPrediction.fund == null || nextPrediction.getAdjustedConfidenceLevel() <= 1 || nextPrediction.getExpectedReturn() <= 0.5)) {
+						//popup.hide();
+						//popup = null;
+						thothButton.toggleAnimation(false);
+						//System.out.println("no Prediction");
+						repaint();
+					} else if (thothButton != null && nextPrediction.fund != null) {
+						//System.out.println("new Prediction");
+						thothButton.toggleAnimation(true);
+						repaint();
+					}
                 };
 	}
 
@@ -467,6 +465,7 @@ public class Simulator extends JPanel {
 		}
 	}
 	
+	private HashMap<Action, Double> actionResults = new HashMap<>();
 	private void updateSimulator() {
 		// Temps global.
 		currentTimeStep += 1;
@@ -482,20 +481,34 @@ public class Simulator extends JPanel {
 			// Mettre à jour news
 			thoth.seekNews(f.getName());
 
-			// Plus-value des actions pour l'utilisateur : màj.
+			// Plus-value des actions pour l'utilisateur
+			// Évaluation de l'IA objective ici, c'est l'utilisateur qui décide en fait.
+			// On utilise alors ici plutôt évaluation IA_only : pour chaque user action on regarde ce que fait l'IA en concurrence.
 			ArrayList<Action> userActions = thoth.player.getActions().get(f);
 			for (Action userAction : userActions != null ? userActions : new ArrayList<Action>()) {
-				if (userAction != null && userAction.getBoughtTime() >= currentTimeStep - 1 && userAction.getBoughtTime() < currentTimeStep + 2) {
+				if (userAction != null && currentTimeStep - userAction.getBoughtTime() <= 3 && userAction.associatedPrediction.fund != null) {
 					// Calculer si correct (plus-value > 0 ?)
-					boolean wasCorrect = userAction.getPlusValue() > 0;
-					double confidence = 0.8; // À adapter (question UI ?)
-					
-					thoth.logger.logSubmit(
-						confidence,           // 0.0-1.0
-						wasCorrect ? "Y" : "N",
-						"Plus-value (3m): " + userAction.getPlusValue() + "% sur " + f.getName()
-					);
-					System.out.println("Logging investment result: " + (wasCorrect ? "correct" : "incorrect") + " for " + f.getName());
+					// on est avant la nouvelle prédiction : précédente prédiction
+					//System.out.println("User action boughtTime: " + userAction.getBoughtTime() + ", currentTimeStep: " + currentTimeStep);
+					//System.out.println("plusValue expectedReturn: " + thoth.prediction.getExpectedReturn() + " for userAction current plusValue " + userAction.getPlusValue());
+					double fundPlusValue = userAction.associatedPrediction.fund.getValueChangePercent();
+
+					actionResults.put(userAction, actionResults.getOrDefault(userAction, 0.0) + fundPlusValue); // update value, it should be correct at the third month
+					//System.out.println("Waiting to log investment result for " + f.getName());
+				}
+				else if (userAction != null && currentTimeStep - userAction.getBoughtTime() > 3) {
+					if (actionResults.containsKey(userAction)) {
+						double confidence = userAction.associatedPrediction.getAIConfidenceLevel();
+						boolean aiWasCorrect = actionResults.get(userAction) >= userAction.associatedPrediction.getExpectedReturn() / 2; // tolerance
+						thoth.logger.logAI(
+							confidence,
+							aiWasCorrect ? "Y" : "N",
+							"Plus-value (3m): " + userAction.getPlusValue() + "% sur " + f.getName()
+						);
+						System.out.println("Accumulated fund plus value: " + actionResults.get(userAction) + "% for " + userAction.associatedPrediction.fund.getName() + ", AI expected return: " + userAction.associatedPrediction.getExpectedReturn() + "%");
+						System.out.println("Logging AI investment result: " + (aiWasCorrect ? "correct" : "incorrect") + " for " + f.getName());
+						actionResults.remove(userAction);
+					}
 				}
 			}
 		}
@@ -737,7 +750,7 @@ public class Simulator extends JPanel {
 
 		// Information
 		g.setColor(Color.LIGHT_GRAY);
-		g.drawString("Thoth AI is a training simulation, it does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
+		g.drawString("Thoth is a training simulation, its AI does not predict the future and can make mistakes. Click the button [?] for more information.", 10, this.getHeight() - 10);
 
 		// [?] button as box
 		if (disclaimerButton == null) {

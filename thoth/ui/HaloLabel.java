@@ -1,7 +1,14 @@
 package thoth.ui;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.Timer;
 
 public class HaloLabel extends JLabel {
 
@@ -18,7 +25,7 @@ public class HaloLabel extends JLabel {
     private static final int PAUSE_AT_MIN = 60;
     private int radius = 1;
 
-    private boolean animation = true;
+    private boolean animation = false;
 
     public HaloLabel(Icon icon, float SPEED, float MAX_PULSE, Color haloColor, int radius) {
         super(icon);

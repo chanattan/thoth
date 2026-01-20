@@ -2,6 +2,7 @@ package thoth.logic;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -10,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 
-import thoth.simulator.Simulator;
 import thoth.simulator.Thoth;
 
 public class AI {
@@ -20,8 +20,11 @@ public class AI {
     private String lastFundText = "";
     private String lastNoFundText = "";
     private boolean moreInfoShown = false;
+    private HashMap<Fund, Prediction> recommendationsCache;
+
     public AI(Thoth thoth) {
         this.thoth = thoth;
+        this.recommendationsCache = new HashMap<>();
     }
 
     /**
@@ -57,7 +60,7 @@ public class AI {
         return new Prediction(bestFund, 0.0f, 0.0f, 0.0f); // Best action, may be null
     }
 
-    /*
+    /* DEPRECATED
         * TODO: les curves étant prégénérables, on peut afficher en décalé antérieur les courbes et calculer un score de confiance
         * en modèle boîte blanche sur les futures performances.
         * 
@@ -76,7 +79,7 @@ public class AI {
         return (float) increases / (lastValues.length - 1); // Proportion of increases
     }
 
-    /**
+    /** DEPRECATED
      * Computes the expected return for a given fund based on its recent performance: it is the percentage increase for the next time step.
      * Returns a double representing the expected return percentage.
      */
@@ -90,6 +93,18 @@ public class AI {
     public void update() {
         // Future implementation: update AI state if needed.
         // Including autopop.
+
+        // Recommendations for all funds.
+        this.recommendationsCache.clear();
+        thoth.prediction = ArimaPredictor.recommend(thoth); // computes other funds too, we set best in thoth
+    }
+
+    public void setRecommendationForFund(Fund fund, Prediction prediction) {
+        this.recommendationsCache.put(fund, prediction);
+    }
+
+    public Prediction getRecommendationForFund(Fund fund) {
+        return this.recommendationsCache.get(fund);
     }
 
     private JLabel fundLabel;
@@ -100,20 +115,18 @@ public class AI {
         fundLabel = null;
         noFundLabel = null;
         Color BG_COLOR = new Color(30, 30, 30);
-
         // recommending conditions (less strict than pop): should we recommend at all?
-        if (prediction.fund != null && prediction.forecastResult != null && prediction.getAIConfidenceLevel() >= 1
+        if (prediction != null && prediction.fund != null && prediction.forecastResult != null && prediction.getAIConfidenceLevel() >= 1
                 && prediction.getExpectedReturn() > 0.5) {
-            // showing hint
-            Simulator.lastHintTime = System.currentTimeMillis();
-
-            int confidence = prediction.getAIConfidenceLevel();
             //String explanation = "The AI recommends investing in " + prediction.fund.getName() + " because it has shown a consistent upward trend in recent periods.";
+            
+            int confidence = prediction.getAIConfidenceLevel();
             
             // Logger
             thoth.logger.logShowHint(
                 confidence >= 3 ? "low" : (confidence == 2 ? "medium" : "high"),
                 "factors",
+                "shown",
                 true, // precondition_ok (capital suffisant ?)
                 "Recommendation: " + prediction.fund.getName() // notes
             );
@@ -121,10 +134,9 @@ public class AI {
             String fundName = prediction.fund.getName();
             double expectedIncrease = prediction.getExpectedReturn();
             
-            String arimaFactors = ArimaPredictor.explain(prediction, prediction.forecastResult, 
-                                                    prediction.fund.getCurve().getPregeneratedValue());
+            String arimaFactors = ArimaPredictor.explain(prediction, prediction.forecastResult, prediction.fund.getCurve().getPregeneratedValue());
             
-            lastFundText = "<html><p style='color:orange'>> Best Fund to Invest: <b>" + fundName + "</b></p>" +
+            lastFundText = "<html><p style='color:orange'>> Best Fund to Invest in: <b style='color:#FFD700'>" + fundName + "</b></p>" +
                 "| Expected +<span style='color:#00FFFF'>" + expectedIncrease + "%</span> (3 months) " +
                 "| Confidence: <b> " + prediction.getConfidenceBadge() + "</b>" +
                 "<br>" + arimaFactors.replace("\n", "<br>") + "</html>";
@@ -132,11 +144,23 @@ public class AI {
             fundLabel.setForeground(Color.LIGHT_GRAY);
                 
         } else {
+            int confidence = 0;
+            if (prediction != null && prediction.fund != null)
+                confidence = prediction.getAIConfidenceLevel();
             lastNoFundText = "<html><p style='color:red'>> No prediction available.</p>" +
                 "| Confidence too low<br>" +
-                "<span>(Need more data or stable trend)</span></html>";
+                "<span>(No stable trend, positive expected return, or sufficient capital)</span></html>";
             noFundLabel = new JLabel(lastNoFundText);
             noFundLabel.setForeground(Color.LIGHT_GRAY);
+            noFundLabel.revalidate();
+            // Logger
+            thoth.logger.logShowHint(
+                confidence >= 3 ? "low" : (confidence == 2 ? "medium" : "high"),
+                "factors",
+                "none",
+                false, // precondition_ok : soit capital insuffisant, soit pas de fund recommandable (expectedReturn <= 0, low confidence < 0.2)
+                "Recommandation abstenue" // notes
+            );
         }
 
         JLabel whyLabel = new JLabel("<html><i>[How does Thoth work?]</i></html>");
@@ -151,7 +175,7 @@ public class AI {
                 JPanel whyPanel = new JPanel();
                 whyPanel.setBackground(BG_COLOR);
                 whyPanel.setLayout(new BorderLayout());
-                JLabel content = new JLabel("<html><div style='width:300px;'>" + ArimaPredictor.why().replace("\n", "<br>") + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style='font-size:small'>(Click anywhere to close)</span></div></html>");
+                JLabel content = new JLabel("<html><div style='width:500px;'>" + ArimaPredictor.why().replace("\n", "<br>") + "<div style='text-align:right;font-size:small;'>(Click anywhere to close)</div></div></html>");
                 content.setForeground(Color.LIGHT_GRAY);
                 content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
                 whyPanel.add(content, BorderLayout.CENTER);
@@ -162,11 +186,12 @@ public class AI {
                 borderPanel.setLayout(new BorderLayout());
                 borderPanel.add(whyPanel, BorderLayout.CENTER);
 
+                int simulatorWidth = thoth.window.getSimulator().getWidth();
                 int simulatorHeight = thoth.window.getSimulator().getHeight();
                 java.awt.Point simulatorLocation = thoth.window.getSimulator().getLocationOnScreen();
                 
-                int popupX = simulatorLocation.x + 10;
-                int popupY = simulatorLocation.y + simulatorHeight - 360;
+                int popupX = simulatorLocation.x + simulatorWidth / 2 - 148;
+                int popupY = simulatorLocation.y + simulatorHeight - 420;
 
                 whyPanel.addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
@@ -232,7 +257,7 @@ public class AI {
         // Left side logo and title
         JPanel leftPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 5));
         leftPanel.setBackground(BG_COLOR);
-        Object[] dateInfo = thoth.getDate();
+        Object[] dateInfo = thoth.prediction == null ? thoth.getDate() : thoth.prediction.getDate();
         String month = (String) dateInfo[0];
         int year = (int) dateInfo[1];
         JLabel titleLabel = new JLabel("<html><h3>Thoth AI</h3>[" + month + "/" + year + "]</html>");
@@ -274,7 +299,7 @@ public class AI {
         yesButton.setFont(yesButton.getFont().deriveFont(12f));
         yesButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mousePressed(java.awt.event.MouseEvent e) {
                 System.out.println("User found the AI prediction helpful.");
                 yesButton.setText("<html><h4>You confirmed this was helpful.</h4></html>");
                 noButton.setText("");
@@ -283,8 +308,9 @@ public class AI {
                 slash2.setText("");
                 somewhatButton.setText("");
 
-                thoth.logger.logSubmit(0.9, "Y", "User found helpful");
                 thoth.window.sim.foundHelpful +=1;
+                thoth.logger.logSubmit(thoth.player.getConfidence(), "Y", "User found helpful");
+                thoth.window.sim.thothButton.toggleAnimation(false);
             }
         });
 
@@ -293,7 +319,7 @@ public class AI {
         noButton.setFont(noButton.getFont().deriveFont(12f));
         noButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mousePressed(java.awt.event.MouseEvent e) {
                 System.out.println("User did not find the AI prediction helpful.");
                 noButton.setText("<html><h4>You indicated this was not helpful.</h4></html>");
                 yesButton.setText("");
@@ -301,8 +327,9 @@ public class AI {
                 helpfulLabel.setText("");
                 slash2.setText("");
                 somewhatButton.setText("");
-                thoth.logger.logSubmit(0.2, "Y", "User did not find this helpful");
+                thoth.logger.logSubmit(thoth.player.getConfidence(), "N", "User did not find this helpful");
                 thoth.window.sim.notHelpful +=1;
+                thoth.window.sim.thothButton.toggleAnimation(false);
             }
         });
 
@@ -311,7 +338,7 @@ public class AI {
         somewhatButton.setFont(somewhatButton.getFont().deriveFont(12f));
         somewhatButton.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mousePressed(java.awt.event.MouseEvent e) {
                 System.out.println("User found the AI prediction somewhat helpful.");
                 somewhatButton.setText("<html><h4>You indicated this was somewhat helpful.</h4></html>");
                 yesButton.setText("");
@@ -319,8 +346,9 @@ public class AI {
                 slash.setText("");
                 helpfulLabel.setText("");
                 slash2.setText("");
-                thoth.logger.logSubmit(0.5, "Y", "User found somewhat helpful");
                 thoth.window.sim.somewhatHelpful +=1;
+                thoth.logger.logSubmit(thoth.player.getConfidence(), "Y", "User found somewhat helpful");
+                thoth.window.sim.thothButton.toggleAnimation(false);
             }
         });
 

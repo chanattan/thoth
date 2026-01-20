@@ -2,8 +2,9 @@ package thoth.logic;
 import java.text.DecimalFormat;
 
 import com.workday.insights.timeseries.arima.struct.ForecastResult;
+import thoth.simulator.Thoth;
 
-public class Prediction {
+public class Prediction implements Cloneable {
     public Fund fund;
     public double confidence;
     public double adjustedConfidence;
@@ -11,6 +12,7 @@ public class Prediction {
     public double score;
     public ForecastResult forecastResult; // for ARIMA
     private DecimalFormat df = new DecimalFormat("#.##");
+    private Object[] date;
 
     public Prediction(Fund fund, double expectedReturn, double confidence, double adjustedConfidence) {
         this.fund = fund;
@@ -18,6 +20,7 @@ public class Prediction {
         this.expectedReturn = expectedReturn;
         this.score = expectedReturn * confidence; // simple scoring
         this.adjustedConfidence = adjustedConfidence;
+        this.date = Thoth.instance.getDate();
     }
 
     public double getScore() {
@@ -42,6 +45,10 @@ public class Prediction {
         else return 0; // No confidence
     }
 
+    public Object[] getDate() {
+        return this.date;
+    }
+
     /**
      * It returns a badge based on AI confidence level.
      */
@@ -55,5 +62,8 @@ public class Prediction {
         };
     }
 
+    public Prediction clone() {
+        return new Prediction(this.fund, this.expectedReturn, this.confidence, this.adjustedConfidence);
+    }
 
 }

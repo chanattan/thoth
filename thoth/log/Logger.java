@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import thoth.simulator.Simulator;
+import thoth.simulator.Thoth;
 
 public class Logger {
 
@@ -17,9 +18,10 @@ public class Logger {
     private List<HAIEvent> haiEvents = new ArrayList<>();
     private long sessionId;
     private int trialId = 0;
-    private String currentCondition = "H_plus_IA"; // Par défaut
-    private String currentTrigger = "on_demand";   // Par défaut
-    private String currentSliceId = "novice";      // Par défaut
+    private int aiTrialId = 0;
+    private String currentCondition = "H_plus_IA";
+    private String currentTrigger = "on_demand";
+    private String currentSliceId = "novice";
 
     private HashMap<String, Long> measures;
     private HashMap<String, Object> data;
@@ -122,23 +124,24 @@ public class Logger {
             public Builder fallbackUsed(Boolean fallbackUsed) { this.fallbackUsed = fallbackUsed; return this; }
             
             public HAIEvent build() { 
-                // Règles de cohérence HAI automatiques
                 if ("H_only".equals(condition)) {
                     aiOutput = "none";
                     aiUncertainty = "na";
                     explanationVariant = "off";
+                } else {
+                    explanationVariant = "factors"; // par défaut
                 }
+
+                if ("AI_only".equals(condition)) {
+                    humanAction = "none";
+                    userConfidence = null;
+                    decisionTimeMs = null;
+                }
+
                 if ("high".equals(aiUncertainty) || !preconditionOk) {
                     abstained = true;
                     fallbackUsed = true;
                     if ("H_plus_IA".equals(condition)) aiOutput = "none";
-                }
-                if ("user_action".equals(eventType) && decisionTimeMs == null && Simulator.lastHintTime > 0) {
-                    if (Simulator.lastHintTime > 0) { // Variable globale ou statique
-                        this.decisionTimeMs = System.currentTimeMillis() - Simulator.lastHintTime;
-                    } else {
-                        this.decisionTimeMs = 0L; // Pas de hint précédent
-                    }
                 }
                 return new HAIEvent(this); 
             }
@@ -153,20 +156,21 @@ public class Logger {
         System.out.println("HAI Logger initialized - Session ID: " + sessionId);
     }
 
-    // === API HAI SIMPLIFIÉE (comme le mini-lab) ===
-
-    /** Log SHOW_HINT - Nouvelle recommandation IA */
-    public void logShowHint(String aiUncertainty, String explanationVariant, 
+    /** Nouvelle recommandation IA */
+    public void logShowHint(String aiUncertainty, String explanationVariant, String aiOutput,
                            boolean preconditionOk, String notes) {
         trialId++;
-        Simulator.lastHintTime = System.currentTimeMillis();
         this.lastShowHintUncertainty = aiUncertainty;
-        this.lastShowHintAiOutput = (preconditionOk && !"high".equals(aiUncertainty)) ? "shown" : "none";
+        this.lastShowHintAiOutput = aiOutput;
+        if (!aiOutput.equals("none")) {
+            Simulator.lastHintTime = System.currentTimeMillis();
+            Simulator.lastHintStep = Thoth.instance.window.getSimulator().getTime();
+        }
 
         HAIEvent.Builder builder = new HAIEvent.Builder()
             .sessionId(sessionId)
             .trialId(trialId)
-            .condition(currentCondition)
+            .condition("H_plus_IA")
             .eventType("show_hint")
             .aiUncertainty(lastShowHintUncertainty)
             .aiOutput(lastShowHintAiOutput)
@@ -178,21 +182,53 @@ public class Logger {
             .notes(notes);
 
         haiEvents.add(builder.build());
-        System.out.println("✓ show_hint #" + trialId + " (uncertainty=" + aiUncertainty + ")");
+        System.out.println("v show_hint #" + trialId + " (uncertainty=" + aiUncertainty + ")");
     }
 
-    /** Log USER_ACTION - Décision utilisateur */
-    public void logUserAction(String humanAction, String notes) {
-        long decisionTimeMs = Simulator.lastHintTime > 0 ? 
-            System.currentTimeMillis() - Simulator.lastHintTime : 0L;
+    /** Hover IA */
+    public void logPassiveShowHint(String aiUncertainty, String explanationVariant, String aiOutput,
+                           boolean preconditionOk, String notes) {
 
         HAIEvent.Builder builder = new HAIEvent.Builder()
             .sessionId(sessionId)
             .trialId(trialId)
-            .condition(currentCondition)
-            .eventType("user_action")
+            .condition("H_plus_IA")
+            .eventType("hover_prediction")
             .aiUncertainty(lastShowHintUncertainty)
             .aiOutput(lastShowHintAiOutput)
+            .trigger(currentTrigger)
+            .sliceId(currentSliceId)
+            .aiUncertainty(aiUncertainty)
+            .explanationVariant(explanationVariant)
+            .preconditionOk(preconditionOk)
+            .notes(notes);
+
+        haiEvents.add(builder.build());
+    }
+
+    /** Décision utilisateur */
+    private String lastEventType = "";
+    public void logUserAction(String humanAction, float userConfidence, String notes) {
+        long decisionTimeMs;
+        boolean human_p_IA = Thoth.instance.window.sim.popup != null && Thoth.instance.window.getSimulator().getTime() - Simulator.lastHintStep <= 3;
+        if (human_p_IA) {
+             decisionTimeMs = Simulator.lastHintTime > 0 ? System.currentTimeMillis() - Simulator.lastHintTime : 0L;
+        } else {
+             decisionTimeMs = this.measures.getOrDefault("decision_time_ms", 0L); // Human only
+             // incrémente seulement si c'est un new trial H_only
+            if (!"user_action".equals(lastEventType)) {
+                this.trialId++;
+            }
+        }
+
+        HAIEvent.Builder builder = new HAIEvent.Builder()
+            .sessionId(sessionId)
+            .trialId(trialId)
+            .condition(human_p_IA ? "H_plus_IA" : "H_only")
+            .eventType("user_action")
+            .aiUncertainty(human_p_IA ? lastShowHintUncertainty : "na")
+            .aiOutput(human_p_IA ? lastShowHintAiOutput : "none")
+            .userConfidence((double) userConfidence)
             .trigger(currentTrigger)
             .sliceId(currentSliceId)
             .humanAction(humanAction)
@@ -201,15 +237,17 @@ public class Logger {
         
         haiEvents.add(builder.build());
 
-        System.out.println("✓ user_action #" + trialId + " (" + humanAction + ", " + decisionTimeMs + "ms)");
+        lastEventType = "user_action";
+
+        System.out.println("> user_action #" + trialId + " (" + humanAction + ", " + decisionTimeMs + "ms)");
     }
 
-    /** Log SUBMIT - Évaluation utilisateur */
+    /** Évaluation utilisateur */
     public void logSubmit(double userConfidence, String correct, String notes) {
         HAIEvent.Builder builder = new HAIEvent.Builder()
             .sessionId(sessionId)
             .trialId(trialId)
-            .condition(currentCondition)
+            .condition("H_plus_IA")
             .eventType("submit")
             .aiUncertainty(lastShowHintUncertainty)
             .aiOutput(lastShowHintAiOutput)
@@ -221,10 +259,29 @@ public class Logger {
         
         haiEvents.add(builder.build());
 
-        System.out.println("✓ submit #" + trialId + " (confidence=" + userConfidence + ", correct=" + correct + ")");
+        System.out.println("> submit #" + trialId + " (confidence=" + userConfidence + ", correct=" + correct + ")");
     }
 
-    // Setters pour contexte
+    /** Évaluation IA */
+    public void logAI(double aiConfidence, String correct, String notes) {
+        aiTrialId++;
+        HAIEvent.Builder builder = new HAIEvent.Builder()
+            .sessionId(sessionId)
+            .trialId(aiTrialId)
+            .condition("AI_only")
+            .eventType("submit")
+            .aiUncertainty(aiConfidence >= 3 ? "high" : (aiConfidence >= 2 ? "mid" : "low"))
+            .aiOutput("shown") // pour IA
+            .trigger(currentTrigger)
+            .sliceId(currentSliceId)
+            .correct(correct)
+            .notes(notes);
+        
+        haiEvents.add(builder.build());
+
+        System.out.println("> AI_only submit #" + trialId + " (confidence=" + aiConfidence + ", correct=" + correct + ")");
+    }
+
     public void setCondition(String condition) { this.currentCondition = condition; }
     public void setTrigger(String trigger) { this.currentTrigger = trigger; }
     public void setSliceId(String sliceId) { this.currentSliceId = sliceId; }
@@ -236,15 +293,13 @@ public class Logger {
     public void stopMeasure(String key) {
         if (measures.containsKey(key)) {
             long elapsed = System.currentTimeMillis() - measures.get(key);
-            data.put(key, (Long) data.getOrDefault(key, 0L) + elapsed);
-            measures.remove(key);
+            measures.put(key, elapsed);
         }
     }
 
-    /** EXPORT CSV HAI - Format exact du mini-lab */
+    /** EXPORT CSV HAI */
     public void saveHAIData(String filename) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-            // Headers EXACTS (ordre obligatoire)
             writer.println("timestamp,session_id,trial_id,condition,event_type,trigger," +
                           "ai_output,ai_uncertainty,explanation_variant,human_action," +
                           "user_confidence,correct,decision_time_ms,slice_id,precondition_ok," +
@@ -253,6 +308,7 @@ public class Logger {
             for (HAIEvent event : haiEvents) {
                 writer.println(event.toCsv());
             }
+            writer.println("Player score: " + Thoth.instance.player.getCapital());
             System.out.println("✅ HAI CSV exporté: " + filename + " (" + haiEvents.size() + " lignes)");
         } catch (IOException e) {
             System.err.println("Erreur export CSV: " + e.getMessage());
@@ -260,15 +316,6 @@ public class Logger {
     }
 
     public void saveData() {
-        data.put("session_id", sessionId);
-        data.put("timestamp", timestamp);
-        data.put("hai_events_count", haiEvents.size());
-        
-        System.out.println("> Saving log data...");
-        for (String key : data.keySet()) {
-            System.out.println(key + ": " + data.get(key));
-        }
-        // Auto-export HAI si pas fait
         saveHAIData("events_sample.csv");
     }
 

@@ -1,13 +1,16 @@
 package thoth.logic;
 
 import java.awt.geom.Point2D;
+import java.text.DecimalFormat;
 
 public class Action {
     private int time;
     private double share;
     private double boughtValue;
     private double priceAtPurchase;
+    public Prediction associatedPrediction = null; // for AI_only purposes
     private Fund fund;
+    private DecimalFormat df = new DecimalFormat("#.##");
 
     // Drawing
     public Point2D.Double position;
@@ -38,7 +41,7 @@ public class Action {
 
     public double getPlusValue() {
         double lastValue = this.fund.getCurve().getLastValues(this.fund.getCurve().getSteps() - 1)[0];
-        return (double) Math.round(lastValue / this.priceAtPurchase * 100 - 100); // in percent
+        return Double.parseDouble(df.format(lastValue / this.priceAtPurchase * 100 - 100)); // in percent
     }
 
     /**
