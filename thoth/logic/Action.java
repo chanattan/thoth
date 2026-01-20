@@ -32,7 +32,7 @@ public class Action {
     }
 
     public double getPriceAtPurchase() {
-        return this.priceAtPurchase;
+        return Math.max(this.priceAtPurchase, 0.01); // avoid division by zero
     }
 
     public double getShare() {
@@ -41,7 +41,7 @@ public class Action {
 
     public double getPlusValue() {
         double lastValue = this.fund.getCurve().getLastValues(this.fund.getCurve().getSteps() - 1)[0];
-        return Double.parseDouble(df.format(lastValue / this.priceAtPurchase * 100 - 100)); // in percent
+        return Double.parseDouble(df.format(lastValue / getPriceAtPurchase() * 100 - 100).replaceAll(",", ".")); // in percent
     }
 
     /**

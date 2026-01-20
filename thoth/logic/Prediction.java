@@ -28,7 +28,7 @@ public class Prediction implements Cloneable {
     }
 
     public double getExpectedReturn() {
-        return Double.parseDouble(df.format(this.expectedReturn));
+        return Double.parseDouble(df.format(this.expectedReturn).replaceAll(",", "."));
     }
 
     public int getAdjustedConfidenceLevel() { // adjusted for the user

@@ -144,7 +144,7 @@ public class InvestorPanel extends JPanel {
                 investmentField.setText("0");
             }
 
-            double val = Double.parseDouble(df.format(Double.parseDouble(investmentField.getText().replaceAll(",", "."))));
+            double val = Double.parseDouble(df.format(Double.parseDouble(investmentField.getText().replaceAll(",", "."))).replaceAll(",", "."));
             double c = thoth.player.getCapital();
             if (selectedFund != null && val > 0) {
                 try {
