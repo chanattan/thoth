@@ -341,7 +341,8 @@ public class Simulator extends JPanel {
 			+ "based on historical data and trends.<br><br>"
 			+ "Thoth AI does not guarantee future results and may make incorrect predictions.<br><br>"
 			+ "Do not rely solely on Thoth AI for investment decisions. "
-			+ "Consult a qualified financial advisor when necessary."
+			+ "Consult a qualified financial advisor when necessary.<br>"
+			+ "Thoth does not save any personal data, anything else is stored on the user's machine."
 			+ "</div></html>";
 
 		JLabel text = new JLabel(disclaimerText);
