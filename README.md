@@ -15,6 +15,8 @@ can be used to control:
 - *automated investment* when the reported confidence is over a controllable threshold
 - *silenced suggestions* under a controllable reported confidence threshold
 
+The model is based on the ARIMA models, with a time frame of 3 months of prediction of the funds' curves.
+
 ### Clear and controllable guardrails
 
 ## About
